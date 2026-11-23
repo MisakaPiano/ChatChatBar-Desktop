@@ -174,10 +174,23 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
     }
 
     internal fun requireCurrentFileOffer(expected: LanSyncGroupInviteOffer) = synchronized(lock) {
-        val current = requireNotNull(issued) { "SYNC_GROUP_INVITE_MISSING" }
-        live(current)
-        require(current.offer === expected && !current.claimed) { "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" }
+        live(checkFileOffer(expected))
     }
+
+    /** The state transition is ordered with closing, claiming and timing out this offer. */
+    internal fun whileFileOfferOpen(expected: LanSyncGroupInviteOffer, action: () -> Unit) = synchronized(lock) {
+        checkFileOffer(expected)
+        action()
+    }
+
+    private fun checkFileOffer(expected: LanSyncGroupInviteOffer): Issued {
+        val current = requireNotNull(issued) { "SYNC_GROUP_INVITE_MISSING" }
+        require(!closed && current.offer === expected && !current.claimed && withinLifetime(current)) {
+            "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED"
+        }
+        return current
+    }
+
     /** Never reuse this context for ordinary group-store or legacy sync commands. */
     fun invitationContext(): SSLContext = identity.context { synchronized(lock) {
         val current = issued
@@ -190,8 +203,11 @@ class LanSyncGroupInvitation(private val identity: LanSyncTlsIdentity, private v
             "SYNC_GROUP_INVITE_AUTHORITY"
         }
     }
+    private fun withinLifetime(current: Issued): Boolean =
+        monotonic() - current.started in 0L until LanSyncGroupInviteOffer.LIFETIME_MILLIS * 1_000_000
+
     private fun live(current: Issued) {
-        require(!closed && issued === current && monotonic() - current.started in 0L until LanSyncGroupInviteOffer.LIFETIME_MILLIS * 1_000_000 &&
+        require(!closed && issued === current && withinLifetime(current) &&
             ledger().current().reference() == current.offer.trust.checkpoint) { "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" }
     }
     /** The TLS session supplies the signing certificate; the request supplies no claimed device ID/certificate. */

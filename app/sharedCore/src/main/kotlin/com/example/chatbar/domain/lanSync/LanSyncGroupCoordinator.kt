@@ -237,6 +237,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     @Volatile private var access: LanSyncGroupRuntimeAccess? = null
     private class ActiveInvitation(val owner: LanSyncGroupInvitation, val offer: LanSyncGroupInviteOffer, val fileOnly: Boolean) {
         var proof: LanSyncGroupInvitedPeer? = null
+        var fileWriteRequest: Any? = null
         val fileBinding = if (fileOnly) UUID.randomUUID().toString() else null
     }
     private var invitation: ActiveInvitation? = null
@@ -390,17 +391,24 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         }
         if (code == "SYNC_GROUP_NATIVE_RELOAD_PENDING" && !automaticLocalCheck) requestLocalCheck()
     }
-    private fun action(label: String, allowWhilePaused: Boolean = false, work: suspend () -> Unit) {
-        if (closed || paused && !allowWhilePaused) return
+    private fun action(label: String, allowWhilePaused: Boolean = false, onFinished: (() -> Unit)? = null, work: suspend () -> Unit) {
+        if (closed || paused && !allowWhilePaused) {
+            onFinished?.invoke()
+            return
+        }
         val generation = actionGeneration.get()
-        scope.launch {
+        val job = scope.launch {
             admission.withLock {
                 if (closed || paused && !allowWhilePaused || generation != actionGeneration.get()) return@withLock
                 mutableState.update { it.copy(busy = true, error = null) }
                 try { work() } catch (error: Exception) { failure(label, error) }
-                finally { mutableState.update { it.copy(busy = false) } }
+                finally {
+                    onFinished?.invoke()
+                    mutableState.update { it.copy(busy = false) }
+                }
             }
         }
+        if (onFinished != null) job.invokeOnCompletion { onFinished() }
     }
     /** Read-only empty startup must not call platform identity/profile factories. */
     fun startIfConfigured() { if (!closed && !paused && hasExistingEvidence()) open() }
@@ -1031,12 +1039,28 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     }
 
     override fun saveInvitationFile(binding: String?, write: (ByteArray) -> Unit) {
-        if (synchronized(lifecycle) { invitationFileWrite != null }) return
-        action("保存邀请文件", allowWhilePaused = true) {
-            val (current, privacy) = synchronized(lifecycle) {
-                requireNotNull(invitation?.takeIf { !closed && !paused && binding != null && it.fileBinding == binding }) {
-                    "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"
-                } to privacyGeneration
+        if (binding == null) return
+        val (current, request) = synchronized(lifecycle) {
+            if (closed) return
+            val active = invitation?.takeIf { !paused && it.fileBinding == binding }
+            if (active == null) {
+                failure("保存邀请文件", IllegalArgumentException("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"))
+                return
+            }
+            if (active.fileWriteRequest != null) return
+            val request = Any()
+            active.fileWriteRequest = request
+            active to request
+        }
+        val finish = {
+            synchronized(lifecycle) {
+                if (current.fileWriteRequest === request) current.fileWriteRequest = null
+            }
+        }
+        action("保存邀请文件", allowWhilePaused = true, onFinished = finish) {
+            val privacy = synchronized(lifecycle) {
+                require(!closed && !paused && invitation === current) { "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED" }
+                privacyGeneration
             }
             val bytes = try { current.owner.fileBytes(current.offer) }
             catch (_: IllegalArgumentException) { error("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED") }
@@ -1045,8 +1069,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     require(!closed && !paused && invitation === current && privacy == privacyGeneration) {
                         "SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED"
                     }
-                    invitationFileWrite = current
-                    mutableState.update { it.copy(invitationFileWriteBinding = current.fileBinding, status = "正在写入邀请文件") }
+                    try {
+                        current.owner.whileFileOfferOpen(current.offer) {
+                            invitationFileWrite = current
+                            mutableState.update { it.copy(invitationFileWriteBinding = binding) }
+                        }
+                    } catch (_: IllegalArgumentException) { error("SYNC_GROUP_INVITE_FILE_SELECTION_EXPIRED") }
                 }
                 write(bytes)
                 currentCoroutineContext().ensureActive()
@@ -1056,7 +1084,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     check(!closed && !paused && invitation === current && privacy == privacyGeneration) {
                         "SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE"
                     }
-                    mutableState.update { it.copy(status = "邀请文件已保存，可在有效期内用新设备打开。") }
+                    try {
+                        current.owner.whileFileOfferOpen(current.offer) {
+                            invitationFileWrite = null
+                            mutableState.update { it.copy(invitationFileWriteBinding = null, status = "邀请文件已保存，可在有效期内用新设备打开。") }
+                        }
+                    } catch (_: IllegalArgumentException) { error("SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE") }
                 }
             } finally {
                 bytes.fill(0)
@@ -1095,9 +1128,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     override fun closeInvitation() = synchronized(lifecycle) {
         if (approvalInFlight != null) {
             mutableState.update { it.copy(status = "正在确认批准结果") }
-        } else if (invitationFileWrite != null) {
-            mutableState.update { it.copy(status = "正在写入邀请文件，完成后可关闭邀请") }
-        } else if (invitation != null || pendingInvitationCommand != null) {
+        } else if (invitationFileWrite == null && (invitation != null || pendingInvitationCommand != null)) {
             invitationCommandGeneration++
             pendingInvitationCommand = null
             clearInvitationLocked()

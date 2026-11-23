@@ -1091,20 +1091,34 @@ class LanSyncGroupCoordinatorTest {
         for (invalidate in listOf(false, true)) {
             val (binding, offer) = issue()
             assertTrue(coordinator.state.value.canCloseInvitation)
+            val actionEntered = CompletableDeferred<Unit>()
+            val releaseAction = CompletableDeferred<Unit>()
+            val holdNextExclusive = AtomicBoolean(true)
             val entered = CompletableDeferred<Unit>()
             val release = CountDownLatch(1)
             val written = ByteArrayOutputStream()
             val unexpected = AtomicInteger()
-            coordinator.saveInvitationFile(binding) { bytes ->
-                entered.complete(Unit)
-                check(release.await(15, TimeUnit.SECONDS))
-                written.write(bytes)
+            f.beforeExclusive = {
+                if (coordinator.state.value.busy && holdNextExclusive.compareAndSet(true, false)) {
+                    actionEntered.complete(Unit)
+                    releaseAction.await()
+                }
             }
+            coordinator.retry()
             try {
+                withTimeout(5_000) { actionEntered.await() }
+                coordinator.saveInvitationFile(binding) { bytes ->
+                    entered.complete(Unit)
+                    check(release.await(15, TimeUnit.SECONDS))
+                    written.write(bytes)
+                }
+                coordinator.saveInvitationFile(binding) { unexpected.incrementAndGet() }
+                assertNull(coordinator.state.value.invitationFileWriteBinding)
+                assertTrue(coordinator.state.value.canCloseInvitation)
+                releaseAction.complete(Unit)
                 withTimeout(5_000) { entered.await() }
                 assertEquals(binding, coordinator.state.value.invitationFileWriteBinding)
                 assertFalse(coordinator.state.value.canCloseInvitation)
-                assertTrue(coordinator.state.value.status.contains("正在写入邀请文件"))
                 coroutineScope {
                     withTimeout(5_000) {
                         async(Dispatchers.Default) { coordinator.closeInvitation() }.await()
@@ -1119,7 +1133,11 @@ class LanSyncGroupCoordinatorTest {
                     assertEquals(binding, coordinator.state.value.invitationFileWriteBinding)
                     assertFalse(coordinator.state.value.canCloseInvitation)
                 }
-            } finally { release.countDown() }
+            } finally {
+                releaseAction.complete(Unit)
+                release.countDown()
+                f.beforeExclusive = {}
+            }
 
             await { !coordinator.state.value.busy && coordinator.state.value.invitationFileWriteBinding == null }
             assertEquals(0, unexpected.get())
@@ -1127,6 +1145,7 @@ class LanSyncGroupCoordinatorTest {
             if (invalidate) {
                 assertTrue(coordinator.state.value.error.orEmpty().contains("SYNC_GROUP_INVITE_FILE_CHANGED_DURING_WRITE"))
                 assertFalse(coordinator.state.value.status.contains("邀请文件已保存"))
+                assertFalse(coordinator.state.value.status.contains("正在写入"))
             } else {
                 assertNull(coordinator.state.value.error)
                 assertTrue(coordinator.state.value.status.contains("邀请文件已保存"))

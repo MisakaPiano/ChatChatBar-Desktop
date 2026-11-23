@@ -502,11 +502,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     suspend fun resolve(candidate: LanSyncGroupResolvedCandidate): LanSyncGroupSourceCommit? = serialized {
         val before = inspectOwned()
         require(candidate.preview.units.keys.intersect(before.plan?.recoveryHeldUnits.orEmpty()).isEmpty()) { LanSyncGroupNativePlanner.RECOVERY_HELD }
-        require(before.plan?.resolutionBlockedByLocalResources(candidate.preview.choices) != true) {
-            "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
-        }
         val revision = candidate.preview.operation
-        val adopted = try { exclusive { resolutions.adopt(candidate, writer.acknowledgedResolutions()) } }
+        val adopted = try { exclusive { resolutions.adopt(candidate, writer.acknowledgedResolutions(), before.plan) } }
         catch (failure: Throwable) {
             try { exclusive {
                 workspace.recover()

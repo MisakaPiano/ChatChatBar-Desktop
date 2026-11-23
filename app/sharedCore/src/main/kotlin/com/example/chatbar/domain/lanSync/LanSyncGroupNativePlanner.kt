@@ -29,7 +29,10 @@ class LanSyncGroupNativePlan internal constructor(val before: LanSyncSnapshot, v
         components[unit].orEmpty().any(blocked::contains)
 
     fun resolutionBlockedByLocalResources(choices: Map<String, LanSyncGroupResolutionChoice>): Boolean =
-        choices.any { (unit, choice) -> choice is LanSyncGroupResolutionChoice.Keep && componentHasBlockedResource(unit) }
+        resolutionBlockedByLocalResources(choices, blockedResourceUnits)
+
+    internal fun resolutionBlockedByLocalResources(choices: Map<String, LanSyncGroupResolutionChoice>, blocked: Set<String>): Boolean =
+        choices.any { (unit, choice) -> choice is LanSyncGroupResolutionChoice.Keep && componentHasBlockedResource(unit, blocked) }
     internal val recoveryHeldUnits: Set<String> get() = units.values.filter { it.code == LanSyncGroupNativePlanner.RECOVERY_HELD }.mapTo(linkedSetOf()) { it.unit }
 }
 

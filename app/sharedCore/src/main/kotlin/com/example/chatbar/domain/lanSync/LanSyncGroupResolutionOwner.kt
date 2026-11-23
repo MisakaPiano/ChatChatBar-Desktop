@@ -75,13 +75,17 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
             authority().current().reference() == data.checkpoint && nativeState().units == data.applied &&
             state.pendingApproved == null && state.last?.version?.reference() == data.authorHead
     }
-    fun adopt(candidate: LanSyncGroupResolvedCandidate, acknowledged: Map<String, Set<String>> = emptyMap()): LanSyncGroupResolutionLocalState = guarded {
+    fun adopt(candidate: LanSyncGroupResolvedCandidate, acknowledged: Map<String, Set<String>> = emptyMap(),
+        plan: LanSyncGroupNativePlan? = null): LanSyncGroupResolutionLocalState = guarded {
         val preview = candidate.preview; var state = load(); live()
         state.rows.firstOrNull { it.operation == preview.operation }?.let { row ->
             require(row.binding == preview.binding) { "SYNC_GROUP_RESOLUTION_OPERATION_CHANGED" }
             return@guarded publicState(complete(state, row))
         }
         workspace.captureGroup(actor.fingerprint, projection).use { capture ->
+            require(plan?.resolutionBlockedByLocalResources(preview.choices, capture.blockedResourceUnits) != true) {
+                "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
+            }
             preview.requireFresh(capture, view(), nativeState().units)
             require(capture.blockedResourceUnits.intersect(preview.resolvedUnits).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
             val authorState = author.state(); require(authorState.pendingApproved == null) { "SYNC_AUTHOR_PENDING_APPROVED_COMMIT" }

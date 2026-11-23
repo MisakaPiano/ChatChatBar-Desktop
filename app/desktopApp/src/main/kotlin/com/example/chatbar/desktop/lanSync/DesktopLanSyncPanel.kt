@@ -64,7 +64,7 @@ internal fun DesktopLanSyncEntry(coordinator: LanSyncGroupCoordinator,
             }
             if (state.invitationRetainedWhileLocked) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
-                    StatusText("邀请仍在有效期内。请重新解锁管理，再核对并确认新设备。")
+                    StatusText(if (state.invitationFileWriteBinding != null) "正在写入邀请文件" else "邀请仍在有效期内。请重新解锁管理，再核对并确认新设备。")
                     BootstrapButton("取消邀请", secondary = true, enabled = state.canCloseInvitation) { coordinator.closeInvitation() }
                 }
             }

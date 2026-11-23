@@ -11,7 +11,7 @@ object LanSyncGroupDisplay {
     fun missingLocalImageNotice(code: String?): String? =
         if (code == LanSyncMissingImage.CODE) "本机会话的图片文件缺失。会话记录和附件引用已保留，其他会话可继续同步。" else null
 
-    const val blockedResolutionImageNotice = "这组内容有本机图片缺失或无法处理。可以先暂缓。请补回可读的原图；若只能替换，请先另存原件，再从原会话的编辑消息入口添加兼容图片。完成后在设备组点「立即检查」并重新打开详情。"
+    const val blockedResolutionImageNotice = "这组内容有本机图片缺失或无法处理。可以先暂缓。请补回可读的原图。如果需要替换，请先另存仍有的原件，再从原会话的编辑消息入口移除旧图片并添加兼容图片。完成后在设备组点「立即检查」并重新打开详情。"
 
     /** Presentation eligibility only; the resolution owner still validates the complete copied graph. */
     fun canOfferCopy(records: List<LanSyncRecord>): Boolean = records.isNotEmpty() && records.none { it.singleton }

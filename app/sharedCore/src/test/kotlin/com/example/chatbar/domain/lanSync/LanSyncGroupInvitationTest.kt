@@ -187,6 +187,9 @@ class LanSyncGroupInvitationTest {
             assertEquals("SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED", assertFailsWith<IllegalArgumentException> {
                 t.owner.requireCurrentFileOffer(offer)
             }.message)
+            assertFailsWith<IllegalArgumentException> {
+                t.owner.whileFileOfferOpen(offer) { fail("An expired offer cannot publish a successful file write") }
+            }
             assertEquals(offer, LanSyncGroupInviteOffer.readFile(bytes.inputStream(), t.wall))
         } finally { bytes.fill(0) }
     }

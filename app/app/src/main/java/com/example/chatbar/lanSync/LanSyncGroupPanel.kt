@@ -193,7 +193,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         if (state.stage == LanSyncGroupPanelStage.READY || recoveryEntries.isNotEmpty() || recoveryView != null)
             GroupRecoveryBrowser(recoveryEntries, recoveryView, interactionBlocked, actions)
         if (state.invitationRetainedWhileLocked) {
-            CbText("邀请仍在有效期内。请解锁管理以核对申请设备，或关闭邀请。")
+            CbText(if (state.invitationFileWriteBinding != null) "正在写入邀请文件" else "邀请仍在有效期内。请解锁管理以核对申请设备，或关闭邀请。")
             CbButton("关闭邀请", actions::closeInvitation, enabled = state.canCloseInvitation, variant = ButtonVariant.Secondary)
         }
         state.invitation?.takeUnless { state.invitationFileOnly }?.let { offer ->

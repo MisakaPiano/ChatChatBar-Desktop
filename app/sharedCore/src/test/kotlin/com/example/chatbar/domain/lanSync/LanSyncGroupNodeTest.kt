@@ -426,6 +426,11 @@ class LanSyncGroupNodeTest {
             cold.prepareRecovery(retained.transaction, a)
         }.message)
         val coldView = cold.inspect()
+        val retainedLater = coldView.resolutions.single { it.operation == later.operation }
+        assertEquals(LanSyncGroupResolutionLocalStage.LOCAL_READY, retainedLater.stage)
+        assertEquals(setOf(a), retainedLater.heldUnits)
+        assertTrue(retainedLater.resolvedUnits.isEmpty())
+        assertFalse(retainedLater.applied)
         assertEquals(oldReceipt, coldView.nativeState.units.getValue(a))
         assertEquals(LanSyncMissingImage.CODE, requireNotNull(coldView.plan).units.getValue(a).code)
         assertContentEquals(rawA, Files.readAllBytes(recordA))
@@ -466,8 +471,12 @@ class LanSyncGroupNodeTest {
         assertFalse(Files.exists(localImage))
         Files.write(localImage, bytes)
         val rechecked = cold.prepareResolution(repairedChoices)
-        assertNotNull(cold.resolve(rechecked.acknowledge(rechecked.binding, rechecked.requiredBindings, rechecked.requiredRestorations)))
+        val recheckedCandidate = rechecked.acknowledge(rechecked.binding, rechecked.requiredBindings, rechecked.requiredRestorations)
+        val committed = assertNotNull(cold.resolve(recheckedCandidate))
         assertContentEquals(bytes, Files.readAllBytes(localImage))
+        Files.delete(localImage)
+        assertEquals(committed.entry.version.reference(), cold.resolve(recheckedCandidate)?.entry?.version?.reference())
+        assertEquals(committed.entry.version.reference(), local.author().state().last?.version?.reference())
     }
 
     @Test fun aTruncatedOwnedPngRetainsItsOriginalRecordWithoutBlockingAnIndependentPublish() =
