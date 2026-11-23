@@ -58,7 +58,7 @@ jobs:
           --android-source ../reverse-android
           --windows-source ../reverse-windows
           --evidence evidence-reverse
-          --fixed-sha256 0a6490e093c646d39eef435cfcb1809591ecf6d36a5cc44e2209fbf1081c7566
+          --fixed-sha256 285a9094ef8b59aeb8f363da4daa601702db8d461317e73c6380a2fda3b7f037
       - uses: actions/upload-artifact@v4
         if: always()
         with:

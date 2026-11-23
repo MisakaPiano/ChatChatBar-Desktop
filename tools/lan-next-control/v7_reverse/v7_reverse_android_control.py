@@ -19,7 +19,8 @@ METHOD='appendOneMessageAndPngAfterProductionLanJoin'
 APP_LAB='files/v7-reverse-lab/'
 NATIVE_PHASES={'opt-in','startup','private-synthetic-offer','real-production-lan-join','initial-repository-receive',
     'durable-imported-session','ordinary-repository-append','normal-runtime-reverse-receipt','activity-close',
-    'isolated-reverse-route','isolated-route-close'}
+    'isolated-reverse-route','isolated-route-close','isolated-read-access','isolated-read-node-root',
+    'isolated-wait-production-listener'}
 class Refused(Exception):pass
 def need(value,code):
     if not value:raise Refused(code)
@@ -30,6 +31,20 @@ def publish(path,value,replace=False):
         json.dump(value,out,separators=(',',':'));out.write('\n');out.flush();os.fsync(out.fileno())
     need(replace or not path.exists(),'NEW_PRIVATE_FILE_REQUIRED');os.replace(temp,path)
 
+def safe_listener_observation(value):
+    if value is None:return
+    flags={'accessAttached','nodeRootRead','portPresent','nearbyReady','socketBoundAndOpen','foregroundProtected'}
+    need(type(value) is dict and set(value)==flags|{'step','firstFailureClass','samples','backgroundPhase'},'LISTENER_DIAGNOSTIC_FIELDS')
+    need(value['step'] in {'NOT_REACHED','READ_ACCESS','READ_NODE_ROOT','WAIT_ORIGINAL_LISTENER',
+         'ORIGINAL_LISTENER_READY','RESOLVE_PRIVATE_ADDRESS','CREATE_LOOPBACK_RELAY','RELAY_READY','PRIVATE_ROUTE_WRITTEN'},'LISTENER_STEP_ENUM')
+    need(value['firstFailureClass'] in {None,'TIMEOUT','FIELD_UNAVAILABLE','REFLECTION_REJECTED','TYPE_MISMATCH',
+         'STATE_ASSERTION','ARGUMENT_ASSERTION','IO','OTHER'},'LISTENER_FAILURE_ENUM')
+    need(value['backgroundPhase'] in {None,'NOT_CONFIGURED','RECOVERY_PENDING','WAITING_FOR_FOREGROUND',
+         'STARTING','RUNNING','STOPPING','PAUSED','FAILED'},'LISTENER_BACKGROUND_ENUM')
+    need(type(value['samples']) is int and 0<=value['samples']<=1000 and
+         all(value[key] is None or type(value[key]) is bool for key in flags),'LISTENER_DIAGNOSTIC_VALUES')
+
+
 def safe_native_progress(raw):
     need(len(raw)<=4096,'NATIVE_PROGRESS_LIMIT');value=json.loads(raw)
     booleans={'initialSessionPresent','initialMessageExact','initialImageMatched','initialMessageCountCapped','durableSessionVerified','appendAttempted','appendCommitted',
@@ -37,7 +52,7 @@ def safe_native_progress(raw):
         'listenerObserved','relayBytesBothDirections','sourceSignedVersionObserved','sourceNativeFrontierObserved',
         'sourceLocalReceiptObserved','publicationReadAvailable'}
     integers={'initialMessageCount','localReverseCount','relayAccepted','relayConnected'}
-    need(set(value)==booleans|integers|{'kind','phase','sequence','firstFailurePhase','groupStage','isolatedRouteMode'},'NATIVE_PROGRESS_FIELDS')
+    need(set(value)==booleans|integers|{'kind','phase','sequence','firstFailurePhase','groupStage','isolatedRouteMode','listenerObservation'},'NATIVE_PROGRESS_FIELDS')
     need(value['isolatedRouteMode']=='ADB_FORWARD_TRANSPARENT_TLS','NATIVE_ROUTE_MODE')
     need(value['kind']=='CCB_V7_ANDROID_REVERSE_PROGRESS' and value['phase'] in NATIVE_PHASES and
          value['firstFailurePhase'] in NATIVE_PHASES|{None},'NATIVE_PROGRESS_PHASE')
@@ -45,6 +60,7 @@ def safe_native_progress(raw):
     need(value['groupStage'] in {None,'EMPTY','NEEDS_RECOVERY_SAVE','PREPARED_LOCKED','JOINING','READY'},'NATIVE_PROGRESS_GROUP_STAGE')
     need(all(value[x] is None or type(value[x]) is bool for x in booleans) and
          all(value[x] is None or type(value[x]) is int and 0<=value[x]<=100 for x in integers),'NATIVE_PROGRESS_VALUES')
+    safe_listener_observation(value['listenerObservation'])
     return value
 
 def isolated_route(raw):

@@ -50,7 +50,8 @@ class ReverseRouteContracts(unittest.TestCase):
             'sourceLocalReceiptObserved','publicationReadAvailable','initialMessageCount','localReverseCount',
             'relayAccepted','relayConnected')}
         values.update(kind='CCB_V7_ANDROID_REVERSE_PROGRESS',phase='normal-runtime-reverse-receipt',
-            sequence=1,firstFailurePhase=None,groupStage='READY',isolatedRouteMode='ADB_FORWARD_TRANSPARENT_TLS')
+            sequence=1,firstFailurePhase=None,groupStage='READY',isolatedRouteMode='ADB_FORWARD_TRANSPARENT_TLS',
+            listenerObservation=None)
         return values
 
     def test_unknown_publication_stays_unknown(self):
@@ -116,6 +117,33 @@ class ReverseRouteContracts(unittest.TestCase):
         cloud.safe_windows_result(value)
         del value['isolatedRouteMode']
         with self.assertRaises(cloud.Refused):cloud.safe_windows_result(value)
+
+
+    def listener(self):
+        return dict(step='WAIT_ORIGINAL_LISTENER',firstFailureClass=None,accessAttached=True,nodeRootRead=True,
+                    portPresent=False,nearbyReady=False,socketBoundAndOpen=False,samples=4,
+                    backgroundPhase='STARTING',foregroundProtected=False)
+
+    def test_listener_sample_preserves_not_ready_and_unknown(self):
+        value=self.progress();value['listenerObservation']=self.listener()
+        got=android.safe_native_progress(json.dumps(value).encode())
+        self.assertFalse(got['listenerObservation']['portPresent'])
+        value['listenerObservation']=None
+        self.assertIsNone(android.safe_native_progress(json.dumps(value).encode())['listenerObservation'])
+
+    def test_listener_output_closed_and_capped(self):
+        for field,item in [('port',34567),('firstFailureClass','RAW_PRIVATE_ERROR'),('samples',1001),('backgroundPhase','UNKNOWN_RAW')]:
+            value=self.listener();value[field]=item
+            with self.assertRaises(android.Refused):android.safe_listener_observation(value)
+
+    def test_original_listener_wait_only_reads_existing_state(self):
+        source=(Path(__file__).parent/'LanV7ReverseSyntheticWriterTest.kt').read_text(encoding='utf-8')
+        block=source.split('phase = "isolated-wait-production-listener"',1)[1].split('val ordinaryPort =',1)[0]
+        for required in ('await(30_000)','synchronized(lifecycle)','portField.get(coordinator)',
+                         'nearbyField.getBoolean(coordinator)','it.isBound && !it.isClosed'):
+            self.assertIn(required,block)
+        for forbidden in ('.start(','.open(','.resumeIfConfigured(','.inspect(','.recover(','.connect(','.upload('):
+            self.assertNotIn(forbidden,block)
 
 
 if __name__=='__main__':unittest.main()

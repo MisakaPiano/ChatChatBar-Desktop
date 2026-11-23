@@ -58,6 +58,15 @@ class LanV7ReverseSyntheticWriterTest {
         var publicationJob: Job? = null
         var reverseRelay: V7ReverseTcpRelay? = null
         var listenerObserved = false
+        var listenerStep = "NOT_REACHED"
+        var listenerFailureClass: String? = null
+        var listenerAccessAttached: Boolean? = null
+        var listenerNodeRootRead: Boolean? = null
+        var listenerPortPresent: Boolean? = null
+        var listenerNearbyReady: Boolean? = null
+        var listenerSocketOpen: Boolean? = null
+        var listenerSamples = 0
+        var readBackground: (() -> AndroidLanSyncBackgroundState)? = null
         var sourceSignedVersionObserved: Boolean? = null
         var sourceNativeFrontierObserved: Boolean? = null
         var sourceLocalReceiptObserved: Boolean? = null
@@ -75,6 +84,17 @@ class LanV7ReverseSyntheticWriterTest {
                 groupStage = state.stage.name; groupBusy = state.busy; groupPaused = state.paused; groupErrorPresent = state.error != null
             }
             progressSequence = (progressSequence + 1).coerceAtMost(10_000)
+            val background = readBackground?.invoke()
+            val listenerDiagnostic = JSONObject().put("step", listenerStep)
+                .put("firstFailureClass", listenerFailureClass ?: JSONObject.NULL)
+                .put("accessAttached", listenerAccessAttached ?: JSONObject.NULL)
+                .put("nodeRootRead", listenerNodeRootRead ?: JSONObject.NULL)
+                .put("portPresent", listenerPortPresent ?: JSONObject.NULL)
+                .put("nearbyReady", listenerNearbyReady ?: JSONObject.NULL)
+                .put("socketBoundAndOpen", listenerSocketOpen ?: JSONObject.NULL)
+                .put("samples", listenerSamples)
+                .put("backgroundPhase", background?.phase?.name ?: JSONObject.NULL)
+                .put("foregroundProtected", background?.foregroundProtected ?: JSONObject.NULL)
             val value = JSONObject().put("kind", "CCB_V7_ANDROID_REVERSE_PROGRESS").put("phase", phase)
                 .put("sequence", progressSequence).put("firstFailurePhase", failed ?: JSONObject.NULL)
                 .put("initialSessionPresent", initialSessionPresent ?: JSONObject.NULL)
@@ -88,7 +108,8 @@ class LanV7ReverseSyntheticWriterTest {
                 .put("oracleWritten", oracleWritten).put("groupStage", groupStage ?: JSONObject.NULL)
                 .put("groupBusy", groupBusy ?: JSONObject.NULL).put("groupPaused", groupPaused ?: JSONObject.NULL)
                 .put("groupErrorPresent", groupErrorPresent ?: JSONObject.NULL).put("diagnosticWriteFailed", diagnosticWriteFailed)
-                .put("listenerObserved", listenerObserved).put("isolatedRouteMode", "ADB_FORWARD_TRANSPARENT_TLS")
+                .put("listenerObserved", listenerObserved).put("listenerObservation", listenerDiagnostic)
+                .put("isolatedRouteMode", "ADB_FORWARD_TRANSPARENT_TLS")
                 .put("relayAccepted", reverseRelay?.accepted?.get()?.coerceAtMost(100) ?: JSONObject.NULL)
                 .put("relayConnected", reverseRelay?.connected?.get()?.coerceAtMost(100) ?: JSONObject.NULL)
                 .put("relayBytesBothDirections", reverseRelay?.let { it.toTarget.get() > 0 && it.fromTarget.get() > 0 } ?: JSONObject.NULL)
@@ -107,6 +128,7 @@ class LanV7ReverseSyntheticWriterTest {
             val args = InstrumentationRegistry.getArguments()
             check(args.getString("v7ReverseSynthetic") == "true" && args.getString("sourceSha") == SOURCE)
             val app = ApplicationProvider.getApplicationContext<ChatBarApp>()
+            readBackground = { app.lanSyncOwner.backgroundState.value }
             check(app.packageName == PACKAGE && app.packageManager.getPackageInfo(PACKAGE, 0).versionCode == 87)
             check(app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0)
             phase = "startup"
@@ -154,20 +176,51 @@ class LanV7ReverseSyntheticWriterTest {
                 coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy &&
                     !coordinator.state.value.paused && coordinator.state.value.devices.any { !it.thisDevice }
             }
-            phase = "isolated-reverse-route"; report(true)
+            phase = "isolated-read-access"; listenerStep = "READ_ACCESS"; report(true)
             // Read the already-attached owner; never construct another node or change its network.
-            val access = checkNotNull(LanSyncGroupCoordinator::class.java.getDeclaredField("access")
-                .apply { isAccessible = true }.get(coordinator) as LanSyncGroupRuntimeAccess?)
+            val accessField = LanSyncGroupCoordinator::class.java.getDeclaredField("access").apply { isAccessible = true }
+            val access = checkNotNull(accessField.get(coordinator) as LanSyncGroupRuntimeAccess?)
+            listenerAccessAttached = true
+            phase = "isolated-read-node-root"; listenerStep = "READ_NODE_ROOT"; report(true)
             val nodeRoot = checkNotNull(LanSyncGroupNode::class.java.getDeclaredField("root")
                 .apply { isAccessible = true }.get(access.node) as java.nio.file.Path?)
-            val ordinaryPort = checkNotNull(LanSyncGroupCoordinator::class.java.getDeclaredField("port")
-                .apply { isAccessible = true }.get(coordinator) as Int?)
-            check(ordinaryPort in 1024..65535)
-            listenerObserved = true
+            listenerNodeRootRead = true
+            phase = "isolated-wait-production-listener"; listenerStep = "WAIT_ORIGINAL_LISTENER"; report(true)
+            val lifecycle = checkNotNull(LanSyncGroupCoordinator::class.java.getDeclaredField("lifecycle")
+                .apply { isAccessible = true }.get(coordinator))
+            val portField = LanSyncGroupCoordinator::class.java.getDeclaredField("port").apply { isAccessible = true }
+            val nearbyField = LanSyncGroupCoordinator::class.java.getDeclaredField("nearbyReady").apply { isAccessible = true }
+            val transportField = LanSyncGroupCoordinator::class.java.getDeclaredField("transport").apply { isAccessible = true }
+            val socketField = LanSyncGroupAppTransport::class.java.getDeclaredField("listener").apply { isAccessible = true }
+            var observedPort: Int? = null
+            // READY is published before the independent nearby worker starts its original listener.
+            // Observe that worker for a bounded interval; no start/resume/open/probe is called here.
+            await(30_000) {
+                val snapshot = synchronized(lifecycle) {
+                    check(accessField.get(coordinator) === access)
+                    Triple(portField.get(coordinator) as Int?, nearbyField.getBoolean(coordinator),
+                        transportField.get(coordinator) as LanSyncGroupAppTransport?)
+                }
+                val originalSocket = snapshot.third?.let { socketField.get(it) as javax.net.ssl.SSLServerSocket? }
+                listenerSamples = (listenerSamples + 1).coerceAtMost(1_000)
+                listenerPortPresent = snapshot.first != null
+                listenerNearbyReady = snapshot.second
+                listenerSocketOpen = originalSocket?.let { it.isBound && !it.isClosed && it.localPort == snapshot.first } ?: false
+                val port = snapshot.first
+                val ready = port != null && port in 1024..65535 && snapshot.second && listenerSocketOpen == true
+                if (ready) observedPort = port
+                report()
+                ready
+            }
+            val ordinaryPort = checkNotNull(observedPort)
+            listenerObserved = true; listenerStep = "ORIGINAL_LISTENER_READY"; report(true)
+            phase = "isolated-reverse-route"; listenerStep = "RESOLVE_PRIVATE_ADDRESS"; report(true)
             val deviceAddress = LanSyncTls.parseAddress(LanSyncTls.localAddresses().single())
             // ADB connects only to this test relay. The app's original listener still sees
             // a real RFC1918 source, and still authenticates the original Windows certificate.
+            listenerStep = "CREATE_LOOPBACK_RELAY"; report(true)
             reverseRelay = V7ReverseTcpRelay(InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), deviceAddress, ordinaryPort, deviceAddress)
+            listenerStep = "RELAY_READY"; report(true)
             val route = JSONObject().put("kind", "CCB_V7_ANDROID_ISOLATED_ROUTE").put("sourceSha", SOURCE)
                 .put("group", access.trust.group.value).put("device", access.device).put("relayPort", reverseRelay!!.port)
             // This existing forward seed is pairing context, not another old86 acceptance.
@@ -192,6 +245,7 @@ class LanV7ReverseSyntheticWriterTest {
             check(initialMessageExact == true && initialImageMatched == true)
             // Let the host replace only its hint responder after forward context is complete.
             Files.write(lab.resolve("route.json"), route.toString().toByteArray(Charsets.UTF_8), CREATE_NEW, WRITE)
+            listenerStep = "PRIVATE_ROUTE_WRITTEN"; report(true)
             check(app.chatRepository.getMessagesReadOnly(SESSION).none { it.id == MESSAGE })
             val beforeVersions = coordinator.view.value?.reconciliation?.authenticatedVersions.orEmpty()
                 .mapNotNull { it.envelope.version?.reference() }.toSet()
@@ -272,7 +326,19 @@ class LanV7ReverseSyntheticWriterTest {
             check(sourceSignedVersionObserved == true && sourceNativeFrontierObserved == true && sourceLocalReceiptObserved == true)
             check(app.chatRepository.getMessagesReadOnly(SESSION).count { it.id == MESSAGE && it.content == TEXT } == 1)
             check(Files.readAllBytes(image).contentEquals(png))
-        } catch (_: Throwable) { if (failed == null) failed = phase }
+        } catch (error: Throwable) { if (failed == null) {
+            failed = phase
+            listenerFailureClass = when (error) {
+                is TimeoutCancellationException -> "TIMEOUT"
+                is NoSuchFieldException -> "FIELD_UNAVAILABLE"
+                is IllegalAccessException, is SecurityException -> "REFLECTION_REJECTED"
+                is ClassCastException -> "TYPE_MISMATCH"
+                is IllegalStateException -> "STATE_ASSERTION"
+                is IllegalArgumentException -> "ARGUMENT_ASSERTION"
+                is java.io.IOException -> "IO"
+                else -> "OTHER"
+            }
+        } }
         finally {
             report(true)
             withContext(NonCancellable) { publicationJob?.cancelAndJoin(); progressJob?.cancelAndJoin() }
