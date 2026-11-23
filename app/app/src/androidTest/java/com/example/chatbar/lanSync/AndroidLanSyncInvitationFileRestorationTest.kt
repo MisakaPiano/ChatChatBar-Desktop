@@ -129,7 +129,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
     }
 
     @Test
-    fun pausedEnrollmentRequiresResumeAndShowsOnlyValidInvitationActions() = runBlocking {
+    fun pausedEnrollmentRequiresResumeAndShowsOnlyValidInvitationActions(): Unit = runBlocking {
         val coordinator = LanSyncGroupCoordinator({ false }, { error("unexpected enrollment") },
             { error("unexpected joining") }, deviceName = "synthetic paused enrollment")
         val calls = AtomicInteger()
