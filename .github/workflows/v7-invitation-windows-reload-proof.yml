@@ -1,0 +1,37 @@
+name: V7 invitation Windows native reload
+on:
+  push:
+    branches: [codex/v7-invitation-r04-repair-20261123]
+    paths:
+      - .github/workflows/v7-invitation-windows-reload-proof.yml
+      - app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopLanSyncReloadRecoveryTest.kt
+permissions:
+  contents: read
+jobs:
+  desktop-reload:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify committed receipt recovery with the Windows chat runtime
+        working-directory: app
+        env:
+          CCB_DESKTOP_NATIVE_RELOAD_PROOF: 'true'
+        run: >-
+          ./gradlew.bat :desktopApp:test
+          --tests '*DesktopLanSyncReloadRecoveryTest.committedSignedReceiveRefreshesTheOpenDesktopChatAndPreservesDraft'
+          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r06-windows-reload
+          path: app/desktopApp/build/test-results/test/TEST-*DesktopLanSyncReloadRecoveryTest.xml
