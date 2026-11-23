@@ -262,9 +262,15 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         val record = requireNotNull(read()) { "SYNC_GROUP_JOIN_MISSING" }
         val offer = requireNotNull(record.offer)
         val source = requireNotNull(offer.bootstrap)
-        val fingerprints = if (record.stage.ordinal < LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) listOf(offer.inviter)
+        val membership = if (record.stage.ordinal >= LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) custody(record, false).ledger().current()
+        else if (record.knownMembership != null && !record.membershipRevoked) {
+            // Reverify the retained signed chain before using its roster for discovery.
+            inspectRetainedMembership(record).membership?.record?.takeIf { it.members[identity.fingerprint]?.active == true }
+                ?.also { requireBootstrapMembership(it, source.vault) }
+        } else null
+        val fingerprints = if (membership == null) listOf(offer.inviter)
         else {
-            val active = custody(record, false).ledger().current().members.filterValues { it.active }.keys
+            val active = membership.members.filterValues { it.active }.keys
             val controller = SyncDeviceSignatures.decode(offer.trust.ownerCertificate).fingerprint
             val members = active - setOf(controller, identity.fingerprint)
             val inviter = listOf(offer.inviter).filter { it in members }
@@ -478,11 +484,8 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
             inspection.code ?: "SYNC_GROUP_JOIN_${inspection.stage}")
         val evidence = requireNotNull(inspection.evidence)
         val candidate = SyncDeviceLedger(evidence.trust).also { value -> evidence.records.forEach { value.offer(it) } }
-        require(candidate.current().coveredTypes == LanSyncScope.schemas.keys) { "SYNC_GROUP_PROFILE_PARTIAL_SCOPE_UNSUPPORTED" }
         require(record.requiredCheckpoints.all(candidate::contains)) { "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING" }
-        require(candidate.current().members[identity.fingerprint]?.certificate == certificate) { "SYNC_GROUP_JOIN_CERTIFICATE_CHANGED" }
-        val owner = candidate.current().members.getValue(bootstrap.vault.owner)
-        require(SyncRecipientPublicKey.parse(owner.recipientKey).hash == bootstrap.vault.recipientKey) { "SYNC_GROUP_JOIN_VAULT_CHANGED" }
+        requireBootstrapMembership(candidate.current(), bootstrap.vault)
         val ledger = custody.enrollWithKeys(evidence.trust, evidence.records, evidence.keys)
         if (record.stage.ordinal < LanSyncGroupJoinStage.KEYS_ADMITTED.ordinal) {
             record = record.copy(stage = LanSyncGroupJoinStage.KEYS_ADMITTED, knownMembership = null, membershipRevoked = false)
@@ -630,6 +633,12 @@ class LanSyncGroupJoining(private val parent: Path, private val workspace: LanSy
         require(lanSyncUtf8(lanSyncRead(mirror.resolve("store.id"), 32)) == record.replicaIdentity) { "SYNC_GROUP_JOIN_REPLICA_CHANGED" }
         val inbox = SyncGroupInbox(bootstrapRoot, FileCiphertextStore(mirror), custody(record, false), recipient(record))
         return inbox.prepareEnrollment(trust(record), record.requiredCheckpoints)
+    }
+    private fun requireBootstrapMembership(membership: SyncDeviceLedgerRecord, vault: SyncManagementVaultContext) {
+        require(membership.coveredTypes == LanSyncScope.schemas.keys) { "SYNC_GROUP_PROFILE_PARTIAL_SCOPE_UNSUPPORTED" }
+        require(membership.members[identity.fingerprint]?.certificate == certificate) { "SYNC_GROUP_JOIN_CERTIFICATE_CHANGED" }
+        val owner = membership.members.getValue(vault.owner)
+        require(SyncRecipientPublicKey.parse(owner.recipientKey).hash == vault.recipientKey) { "SYNC_GROUP_JOIN_VAULT_CHANGED" }
     }
     private fun retainObservedMembership(record: Record, inspection: SyncGroupBootstrapInspection): Record {
         val observed = inspection.membershipCheckpoint ?: return record

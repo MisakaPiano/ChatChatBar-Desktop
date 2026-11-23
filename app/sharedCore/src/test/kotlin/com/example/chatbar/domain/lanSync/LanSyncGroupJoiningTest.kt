@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.domain.syncStore.*
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.net.ConnectException
 import java.net.InetAddress
 import java.net.Socket
 import java.nio.file.Files
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLServerSocket
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -22,21 +24,22 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class LanSyncGroupJoiningTest {
-    private class Joiner(val founder: LanSyncGroupAdministrationTest.Fixture) {
-        val root = Files.createDirectory(founder.root.resolve("join-profile"))
-        val data = Files.createDirectory(founder.root.resolve("join-data"))
-        val workspace = LanSyncWorkspace(data, Files.createDirectory(founder.root.resolve("join-workspace")), { Path.of(it) })
+    private class Joiner(val founder: LanSyncGroupAdministrationTest.Fixture,
+        val identity: LanSyncTlsIdentity = founder.joiningIdentity, directoryPrefix: String = "join") {
+        val root = Files.createDirectory(founder.root.resolve("$directoryPrefix-profile"))
+        val data = Files.createDirectory(founder.root.resolve("$directoryPrefix-data"))
+        val workspace = LanSyncWorkspace(data, Files.createDirectory(founder.root.resolve("$directoryPrefix-workspace")), { Path.of(it) })
         var hook: (String) -> Unit = {}; var gated = false
         @Volatile var timeShift = 0L
         val platform = object : LanSyncPlatform {
             override suspend fun exclusive(work: suspend () -> Unit) { check(!gated); gated = true; try { work() } finally { gated = false } }
             override suspend fun reload(sessionIds: Set<String>) { check(gated) }
         }
-        fun owner() = LanSyncGroupJoining(root, workspace, platform, founder.joiningIdentity,
+        fun owner() = LanSyncGroupJoining(root, workspace, platform, identity,
             { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }, { hook(it) }, wallTime = { System.currentTimeMillis() + timeShift })
         fun protectedCoordinator(network: LanSyncNetwork) = LanSyncGroupCoordinator(
             { Files.isRegularFile(root.resolve("joining/profile.protected")) },
-            { LanSyncGroupEnrollment(root, workspace, platform, founder.joiningIdentity,
+            { LanSyncGroupEnrollment(root, workspace, platform, identity,
                 { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }) },
             ::owner, network, "合成 Android", initiallyPaused = true)
         fun control() = lanSyncJson.parseToJsonElement(Files.readAllBytes(root.resolve("joining/profile.protected")).reversedArray().toString(Charsets.UTF_8)).jsonObject
@@ -62,7 +65,7 @@ class LanSyncGroupJoiningTest {
                 owner.prepare(offer.code()) {}
                 val server = pool.submit<LanSyncGroupInvitedPeer> { invitation.serve(listener.accept() as SSLSocket) }
                 owner.prove("合成加入设备") { current ->
-                    LanSyncTls.connect(founder.joiningIdentity, current.host, current.port, current.inviter, 15_000) { _, _ -> Socket(InetAddress.getLoopbackAddress(), listener.localPort) }
+                    LanSyncTls.connect(identity, current.host, current.port, current.inviter, 15_000) { _, _ -> Socket(InetAddress.getLoopbackAddress(), listener.localPort) }
                 }
                 return invitation to server.get(20, TimeUnit.SECONDS)
             } finally { listener.close(); pool.shutdownNow(); check(pool.awaitTermination(25, TimeUnit.SECONDS)) }
@@ -85,6 +88,149 @@ class LanSyncGroupJoiningTest {
         paths.filter { Files.isRegularFile(it) }.toList().associate { file -> root.relativize(file).toString() to
             lanSyncHash(Files.readAllBytes(file)) }
     }
+
+    private class HistoricalJoinRelay(val client: Joiner, val alternate: LanSyncGroupRuntimeAccess,
+        val missingCapsule: CiphertextObjectMetadata, val published: Map<CiphertextObjectMetadata, ByteArray>) : LanSyncNetwork {
+        var port = 0
+        val originalDials = AtomicInteger()
+        val alternateDials = AtomicInteger()
+        override val discoveryEnabled = false
+        override fun addresses() = listOf("10.0.0.2")
+        override fun accepts(address: InetAddress) = address.isLoopbackAddress
+        override fun discoverGroup(group: SyncStoreId, local: String, fingerprint: String): LanSyncPeer? =
+            LanSyncPeer(fingerprint, "合成备选设备", addresses().single(), port).takeIf {
+                group == alternate.trust.group && local == client.identity.fingerprint && fingerprint == alternate.device
+            }
+        override fun connect(identity: LanSyncTlsIdentity, peer: LanSyncPeer): SSLSocket {
+            if (peer.fingerprint == client.founder.identity.fingerprint) {
+                originalDials.incrementAndGet()
+                throw ConnectException("SYNTHETIC_ORIGINAL_INVITER_OFFLINE")
+            }
+            assertEquals(alternate.device, peer.fingerprint)
+            alternateDials.incrementAndGet()
+            return LanSyncTls.connect(identity, peer.host, peer.port, peer.fingerprint, 5_000) { _, port ->
+                Socket(InetAddress.getLoopbackAddress(), port)
+            }
+        }
+        fun retain(key: CiphertextObjectKey, bytes: ByteArray) {
+            val descriptor = CiphertextDescriptor(bytes.size.toLong(), CiphertextSha256.parse(lanSyncHash(bytes)))
+            alternate.reader.put(CiphertextPutRequest(key, SyncStoreId.random(), descriptor), bytes.inputStream())
+        }
+        suspend fun admitFromPublishedCopy(includeMissingCapsule: Boolean) {
+            published.forEach { (metadata, bytes) ->
+                if (includeMissingCapsule || metadata != missingCapsule) retain(metadata.key, bytes)
+            }
+            var cursor: CommitCursor? = null
+            do { cursor = alternate.node.discover(alternate.reader, cursor).nextCursor } while (cursor != null)
+            assertFalse(alternate.node.reconcileForPrefetch().trustBlocked)
+            assertTrue(alternate.ledger().current().members.getValue(client.identity.fingerprint).active)
+        }
+    }
+
+    private fun historicalJoinRelay(work: suspend (HistoricalJoinRelay) -> Unit) = fixture { client ->
+        val founder = client.founder
+        founder.rotateBeforeJoin()
+        client.publishedPreset()
+        val alternate = Joiner(founder, LanSyncTlsIdentity.create(), "alternate")
+        val alternateOwner = alternate.owner()
+        alternate.admit(alternate.prove(alternateOwner))
+        val alternateActivation = alternateOwner.activate(client.backend())
+        assertEquals(LanSyncGroupJoinStage.READY, alternateActivation.profile.stage, alternateActivation.waitingCode)
+        val access = requireNotNull(alternateOwner.runtimeAccess())
+
+        val owner = client.owner()
+        client.admit(client.prove(owner))
+        val oldEpoch = founder.custody().ledger().history().first().epoch
+        val source = client.backend()
+        val page = source.listCommits(null)
+        assertNull(page.nextCursor)
+        val commits = page.entries.associateWith { metadata ->
+            ByteArrayOutputStream().also { assertEquals(metadata, source.readTo(metadata.key, it, metadata.descriptor)) }.toByteArray()
+        }
+        val missing = commits.entries.single { (_, bytes) ->
+            SyncKeyDeliveryCodec.hasPrefix(bytes) && SyncKeyDeliveryCodec.decode(bytes).context.let {
+                it.recipient == client.identity.fingerprint && it.epoch == oldEpoch
+            }
+        }.key
+        val incomplete = object : CiphertextStore by source {
+            override fun listCommits(cursor: CommitCursor?, pageSize: Int) = source.listCommits(cursor, pageSize).let {
+                it.copy(entries = it.entries - missing)
+            }
+        }
+        val partial = owner.activate(incomplete)
+        assertEquals("SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", partial.waitingCode)
+        assertEquals(LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, partial.profile.stage)
+        assertTrue(partial.profile.membershipVerified)
+        assertNull(partial.node)
+        assertFalse(Files.exists(client.root.resolve("joining/custody/group.protected")))
+        val relay = HistoricalJoinRelay(client, access, missing, commits)
+        val transport = LanSyncGroupAppTransport(access, relay) { _, _ -> }
+        try {
+            relay.port = transport.start()
+            work(relay)
+        } finally { transport.closeAndDrain() }
+    }
+
+    @Test fun approvedColdJoinFetchesItsMissingHistoricalKeyFromAnAuthorizedMemberOverOrdinaryTls() = historicalJoinRelay { relay ->
+        val client = relay.client
+        val original = client.control()
+        val recipient = client.root.resolve("joining/recipient/recipient.protected")
+        val protectedRecipient = Files.readAllBytes(recipient)
+        relay.admitFromPublishedCopy(includeMissingCapsule = true)
+        val coordinator = client.protectedCoordinator(relay)
+        try {
+            coordinator.resumeIfConfigured()
+            val cardPath = client.data.resolve("entities/character_cards/wire-card.json")
+            withTimeout(45_000) {
+                coordinator.state.first { it.stage == LanSyncGroupPanelStage.READY && !it.busy }
+                while (!Files.isRegularFile(cardPath)) delay(25)
+            }
+            assertTrue(relay.originalDials.get() > 0)
+            assertTrue(relay.alternateDials.get() > 0)
+            assertEquals(original.getValue("operation"), client.control().getValue("operation"))
+            assertEquals(original.getValue("offer"), client.control().getValue("offer"))
+            assertContentEquals(protectedRecipient, Files.readAllBytes(recipient))
+            val card = assertNotNull(LanSyncJsonFiles.read(cardPath, CharacterCard.serializer()))
+            assertEquals(client.card("wire-card").name, card.name)
+            val joined = assertNotNull(client.owner().runtimeAccess())
+            assertEquals(relay.alternate.ledger().current().reference(), joined.ledger().current().reference())
+            val oldKey = SyncKeyDeliveryCodec.decode(relay.published.getValue(relay.missingCapsule)).context
+            val recipientKey = SyncDeviceKeyCustody(recipient.parent, client.identity.fingerprint,
+                { it.reversedArray() }, { it.reversedArray() }).open(original.getValue("recipient").jsonPrimitive.content)
+            val custody = SyncGroupCustody(client.root.resolve("joining/custody"), joined.trust.group, recipientKey,
+                { it.reversedArray() }, { it.reversedArray() })
+            assertEquals(oldKey.keyCommitment, custody.key(oldKey.epoch).keyCommitment())
+        } finally { coordinator.closeAndDrain() }
+    }
+
+    @Test fun alternateMemberMustAuthorizeTheApplicantAndSupplyItsAuthenticHistoricalCapsule() = historicalJoinRelay { relay ->
+        val client = relay.client
+        val owner = client.owner()
+        val original = client.control()
+        assertTrue(assertNotNull(owner.profile()).membershipVerified)
+        assertFalse(client.identity.fingerprint in relay.alternate.ledger().current().members)
+        assertFailsWith<IOException> { owner.activate(owner.discoveredBootstrapStores(relay).single()) }
+
+        relay.admitFromPublishedCopy(includeMissingCapsule = false)
+        val missing = owner.activate(owner.discoveredBootstrapStores(relay).single())
+        assertEquals("SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", missing.waitingCode)
+        val key = relay.missingCapsule.key
+        val authentic = SyncKeyDeliveryCodec.decode(relay.published.getValue(relay.missingCapsule))
+        val tampered = authentic.copy(signature = Base64.getEncoder().encodeToString(ByteArray(64)))
+        assertEquals("SYNC_KEY_DELIVERY_SIGNATURE", assertFailsWith<IllegalArgumentException> {
+            tampered.verifyOwner(relay.alternate.trust, key)
+        }.message)
+        relay.retain(key, SyncKeyDeliveryCodec.encode(tampered))
+        val rejected = owner.activate(owner.discoveredBootstrapStores(relay).single())
+        assertEquals("SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", rejected.waitingCode)
+        assertTrue(rejected.profile.membershipVerified)
+        assertNull(rejected.node)
+        assertTrue(relay.alternateDials.get() >= 3)
+        assertFalse(Files.exists(client.root.resolve("joining/custody/group.protected")))
+        assertFalse(Files.exists(client.data.resolve("entities/character_cards/wire-card.json")))
+        assertEquals(original, client.control())
+    }
+
     @Test fun firstExplicitJoinAutomaticallySendsOneRealProofWhenProtectionStarts() = fixture { f ->
         val access = requireNotNull(f.founder.service.runtimeAccess())
         val attempts = AtomicInteger()
