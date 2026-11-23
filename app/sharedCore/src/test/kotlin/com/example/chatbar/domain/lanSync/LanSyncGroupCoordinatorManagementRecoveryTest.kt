@@ -216,7 +216,8 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
 
     private suspend fun issueRecovery(coordinator: LanSyncGroupCoordinator, joined: Joined,
         access: LanSyncGroupRuntimeAccess, parent: SyncDeviceLedgerRecord, primary: SyncDeviceLedgerRecord,
-        other: SyncDeviceLedgerRecord, kept: String, excludedKey: SyncDeviceEncryptionKey): SignedRecovery {
+        other: SyncDeviceLedgerRecord, kept: String, excludedKey: SyncDeviceEncryptionKey,
+        afterPrepare: () -> Unit = {}): SignedRecovery {
         val groupFile = joined.root.resolve("joining/custody/group.protected")
         val originals = Files.readAllBytes(groupFile)
         val recoveryRoot = access.work.resolve("membership-recovery")
@@ -224,6 +225,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
         val checkpoints = setOf(primary.reference(), other.reference())
         coordinator.prepareMembershipRecovery(joined.f.code)
         await { !coordinator.state.value.busy && coordinator.state.value.membershipRecovery != null }
+        afterPrepare()
         val review = requireNotNull(coordinator.state.value.membershipRecovery)
         assertEquals(checkpoints.map { it.id.value to it.bodyHash }.toSet(), review.heads.map { it.id to it.bodyHash }.toSet())
         val rows = review.members.associateBy { it.fingerprint }
@@ -631,6 +633,11 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         assertFalse(recipientD.fingerprint in cRow.members)
                         // Exchange both candidates before asking either participant to reconcile.
                         receiveFrom(b, remote(secondary, a, reopenedPort))
+                        retainedReceipt?.let { receipt ->
+                            assertTrue(b.node.reconcileForPrefetch().trustBlocked)
+                            assertEquals(setOf(cRow, dRow), assertNotNull(b.verifiedLedgerFork()).branches.toSet())
+                            assertFalse(Files.exists(receipt))
+                        }
                         val live = joined.coordinator
                         live.startIfConfigured()
                         await { !live.state.value.busy && live.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
@@ -665,13 +672,20 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             assertFalse(cold.state.value.managementUnlocked)
                             if (recoverFork) {
                                 cold.pauseAndDrain()
-                                retainedReceipt?.let { assertFalse(Files.exists(it)) }
-                                issueRecovery(cold, joined, b, parent, cRow, dRow, recipientC.fingerprint, recipientDKey).also {
-                                    retainedReceipt?.let { receipt ->
-                                        assertTrue(Files.isRegularFile(receipt))
-                                        assertContentEquals(requireNotNull(appliedBytes), Files.readAllBytes(previouslyApplied))
+                                retainedReceipt?.let { receipt ->
+                                    assertFalse(Files.exists(receipt))
+                                    joined.observe = { point ->
+                                        check(point != "NATIVE_DATA_APPLIED") { "SYNTHETIC_APPLIED_DATA_REPLAYED_DURING_FORK_RECOVERY" }
                                     }
                                 }
+                                try {
+                                    issueRecovery(cold, joined, b, parent, cRow, dRow, recipientC.fingerprint, recipientDKey) {
+                                        retainedReceipt?.let { receipt ->
+                                            assertTrue(Files.isRegularFile(receipt))
+                                            assertContentEquals(requireNotNull(appliedBytes), Files.readAllBytes(previouslyApplied))
+                                        }
+                                    }
+                                } finally { joined.observe = {} }
                             } else null
                         } finally { cold.closeAndDrain() }
                         if (signed == null) {
