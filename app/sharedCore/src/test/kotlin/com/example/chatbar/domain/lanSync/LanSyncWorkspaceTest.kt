@@ -29,6 +29,71 @@ class LanSyncWorkspaceTest {
         Files.write(rightImage, byteArrayOf(1, 2, 4))
         assertNotEquals(left.snapshot.hashes(), workspace(b).capture("synthetic").snapshot.hashes())
     }
+
+    @Test fun onlyConfirmedOwnedMissingMessageImagesAreIsolated() {
+        val root = root(); val ws = workspace(root, root.resolve("workspace"))
+        val images = Files.createDirectory(root.resolve("images"))
+        val session = root.resolve("entities/chat_sessions/s.json")
+        val message = root.resolve("entities/chat_messages/s_m.json")
+        Files.createDirectories(session.parent); Files.createDirectories(message.parent)
+        LanSyncJsonFiles.write(session, ChatSession.serializer(), ChatSession("s", "card", "独立会话", createdAt = 1, updatedAt = 1))
+        fun attach(path: Path) = LanSyncJsonFiles.write(message, ChatMessage.serializer(), ChatMessage("m", "s", MessageRole.USER, "图片",
+            images = listOf(path.toString()), createdAt = 2, updatedAt = 2))
+
+        attach(images.resolve("missing.png"))
+        val privateSnapshot = ws.captureGroup("synthetic").use {
+            assertEquals(setOf("conversation/s"), it.missingImageUnits)
+            assertTrue(it.snapshot.resources.isEmpty())
+            assertTrue(it.blobs.isEmpty())
+            it.snapshot
+        }
+        assertFailsWith<NoSuchFileException> { ws.capture("synthetic").close() }
+        attach(images.resolve("missing-parent/photo.png"))
+        ws.captureGroup("synthetic").use { assertEquals(setOf("conversation/s"), it.missingImageUnits) }
+
+        val readable = Files.writeString(images.resolve("present.png"), "synthetic readable bytes")
+        attach(readable)
+        val presentRecord = Files.readAllBytes(message)
+        ws.captureGroup("synthetic").use { current ->
+            val fake = LanSyncPlan(UUID.randomUUID().toString(), privateSnapshot, emptyMap())
+            assertEquals(LanSyncMissingImage.CODE, assertFailsWith<IllegalArgumentException> {
+                ws.apply(fake, current.snapshot.hashes(), "synthetic", current.blobs, isolateLocalImages = true)
+            }.message)
+        }
+        assertContentEquals(presentRecord, Files.readAllBytes(message))
+
+        attach(root.resolve("../other-root/image.png"))
+        assertEquals("SYNC_EXTERNAL_RESOURCE", assertFailsWith<IllegalArgumentException> { ws.captureGroup("synthetic").close() }.message)
+        attach(images.resolve("../images/unsafe-normalization.png"))
+        assertFailsWith<IllegalArgumentException> { ws.captureGroup("synthetic").close() }
+        attach(Files.createDirectory(images.resolve("directory.png")))
+        assertEquals("SYNC_FILE_TYPE", assertFailsWith<IllegalArgumentException> { ws.captureGroup("synthetic").close() }.message)
+        attach(Files.writeString(images.resolve("ordinary-file.png"), "valid parent must be a directory").resolve("leaf.png"))
+        assertFails { ws.captureGroup("synthetic").close() }
+        if (root.fileSystem.separator == "/") {
+            val dangling = Files.createSymbolicLink(images.resolve("dangling.png"), images.resolve("never-created.png"))
+            attach(dangling)
+            assertFailsWith<NoSuchFileException> { ws.captureGroup("synthetic").close() }
+            val other = root(); val linkedParent = Files.createSymbolicLink(images.resolve("linked"), other)
+            attach(linkedParent.resolve("missing.png"))
+            assertEquals("SYNC_UNSAFE_PATH", assertFailsWith<IllegalArgumentException> { ws.captureGroup("synthetic").close() }.message)
+        }
+
+        val malformed = Files.writeString(images.resolve("malformed.png"), "invalid image bytes")
+        attach(malformed)
+        val validating = LanSyncWorkspace(root, root.resolve("validating"), { Path.of(it) }, validateResource = { _, _, _ ->
+            error("SYNC_IMAGE_INVALID")
+        })
+        assertEquals("SYNC_IMAGE_INVALID", assertFailsWith<IllegalStateException> { validating.captureGroup("synthetic").close() }.message)
+
+        val raced = Files.writeString(images.resolve("changed-during-capture.png"), "synthetic image media")
+        LanSyncJsonFiles.write(message, ChatMessage.serializer(), ChatMessage("m", "s", MessageRole.USER, "同一源路径",
+            images = listOf(raced.toString(), raced.toString()), createdAt = 2, updatedAt = 2))
+        val changing = LanSyncWorkspace(root, root.resolve("racing"), { Path.of(it) }, validateResource = { _, _, _ ->
+            Files.delete(raced)
+        })
+        assertEquals("SYNC_SOURCE_CHANGED", assertFailsWith<IllegalArgumentException> { changing.captureGroup("synthetic").close() }.message)
+    }
     @Test fun actualApplyReopenRepeatAndDeletionPreserveUncoveredStores() {
         val root = root(); val state = root().resolve("workspace")
         val ws = workspace(root, state)

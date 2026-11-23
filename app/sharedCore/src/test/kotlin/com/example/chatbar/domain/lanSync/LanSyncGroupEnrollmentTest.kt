@@ -45,6 +45,32 @@ class LanSyncGroupEnrollmentTest {
         try { work(fixture) } finally { fixture.services.forEach { it.close() }; check(root.toFile().deleteRecursively()) }
     }
 
+    @Test fun initialFounderWithMissingOwnedMessageImageCanPublishAnIndependentUnitAndReopen() = withFixture { f ->
+        f.card()
+        val session = f.data.resolve("entities/chat_sessions/old.json")
+        val message = f.data.resolve("entities/chat_messages/old_message.json")
+        val missing = f.data.resolve("images/original-picker-file.png")
+        Files.createDirectories(session.parent); Files.createDirectories(message.parent)
+        LanSyncJsonFiles.write(session, ChatSession.serializer(), ChatSession("old", "card", "旧会话", createdAt = 1, updatedAt = 1))
+        LanSyncJsonFiles.write(message, ChatMessage.serializer(), ChatMessage("message", "old", MessageRole.USER, "保留原始图片引用",
+            images = listOf(missing.toString()), createdAt = 2, updatedAt = 2))
+        val original = Files.readAllBytes(message)
+        val owner = f.service()
+        val draft = owner.prepare(f.request, SyncRootGroupCreateAdmission {})
+        val node = owner.activate(draft, LanSyncGroupRecoverySavedAdmission {})
+        assertEquals(LanSyncGroupEnrollmentStage.READY, owner.profile()?.stage)
+        val view = node.inspect()
+        assertTrue(view.nativeState.units.isEmpty())
+        assertEquals(LanSyncMissingImage.CODE, requireNotNull(view.plan).units.getValue("conversation/old").code)
+        val commit = node.commit(view.review(setOf("character_cards/card")))
+        assertEquals(setOf("character_cards/card"), commit.entry.version.changes.keys)
+        owner.close()
+        val cold = requireNotNull(f.service(metadataBudget = LanSyncMetadataBudget()).open())
+        assertEquals(setOf("character_cards/card"), cold.inspect().nativeState.units.keys)
+        assertContentEquals(original, Files.readAllBytes(message))
+        assertFalse(Files.exists(missing))
+    }
+
     @Test fun aggregateInlineMetadataAboveWorkingWindowActivatesEveryRecordAndColdReopensTheSameGroup() = withFixture { f ->
         val cards = listOf("a", "b").map { id -> CharacterCard(id, "synthetic-$id-" + "x".repeat(2048), createdAt = 1, updatedAt = 1) }
         val paths = cards.associate { card ->

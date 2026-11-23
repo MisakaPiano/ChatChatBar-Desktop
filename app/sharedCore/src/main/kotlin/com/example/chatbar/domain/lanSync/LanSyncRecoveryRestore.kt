@@ -20,8 +20,12 @@ object LanSyncRecoveryRestore {
         unit: String, revision: String = UUID.randomUUID().toString()): LanSyncRestorePreview {
         require(revision.matches(Regex("[a-f0-9-]{36}")) && revision != entry.transaction) { "SYNC_RECOVERY_REVISION" }
         require(entry.sourceDevice == old.deviceId && current.deviceId == (entry.custodyDevice ?: entry.sourceDevice)) { "SYNC_RECOVERY_DEVICE" }
-        old.validate(); current.validate(); LanSyncScope.validateGraph(old); LanSyncScope.validateGraph(current)
+        old.validate(); current.validate()
+        LanSyncScope.validateGraph(old, allowLocalMissingImages = entry.hasLocalOriginals)
+        LanSyncScope.validateGraph(current, allowLocalMissingImages = true)
         require(unit in affected) { "SYNC_RECOVERY_UNIT" }
+        val unavailable = LanSyncMissingImage.units(old)
+        require(unit !in unavailable) { LanSyncMissingImage.CODE }
         val retained = requireNotNull(old.units()[unit]) { "SYNC_RECOVERY_UNIT" }.toMutableList()
         val retainedKeys = retained.map { it.key }.toSet()
         current.records.filter { it.key in retainedKeys && it.type !in LanSyncMoments.types }.forEach {
@@ -41,11 +45,12 @@ object LanSyncRecoveryRestore {
                 restoredUnits += key
             }
         }
+        require(unavailable.intersect(restoredUnits).isEmpty()) { LanSyncMissingImage.CODE }
         val records = independent + retained
         val resourceIds = LanSyncScope.referencedResources(records)
         val resources = (current.resources + old.resources).filterKeys(resourceIds::contains)
         val snapshot = current.copy(records = records, resources = resources)
-        snapshot.validate(); LanSyncScope.validateGraph(snapshot)
+        snapshot.validate(); LanSyncScope.validateGraph(snapshot, allowLocalMissingImages = true)
         val expected = current.hashes()
         val restoredHashes = snapshot.hashes()
         val binding = lanSyncHash(buildJsonObject {

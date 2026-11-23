@@ -33,7 +33,7 @@ object LanSyncGroupNativePlanner {
         val source = current.snapshot.let { it.copy(records = Collections.unmodifiableList(it.records.toList()),
             resources = Collections.unmodifiableMap(it.resources.toMap()), coveredTypes = Collections.unmodifiableSet(it.coveredTypes.toSet()),
             excludedTypes = Collections.unmodifiableSet(it.excludedTypes.toSet())) }
-        source.validate(); LanSyncScope.validateGraph(source)
+        source.validate(); LanSyncScope.validateGraph(source, allowLocalMissingImages = true)
         require(!reconciled.trustBlocked && reconciled.history != null && reconciled.ledgerCheckpoint != null) { "SYNC_GROUP_NATIVE_TRUST_VIEW" }
         val history = reconciled.history.snapshot(); val checkpoint = reconciled.ledgerCheckpoint
         recordEvidence.requireView(history, checkpoint)
@@ -76,7 +76,8 @@ object LanSyncGroupNativePlanner {
                 records: LanSyncGroupRecordGate? = null, code: String? = null) =
                 LanSyncGroupNativeUnit(unit, stage, local, before, Collections.unmodifiableSet(frontier), Collections.unmodifiableMap(incomingViews), available, records, code)
             if (unit in current.blockedResourceUnits) {
-                rows[unit] = row(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, code = "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED")
+                val code = if (unit in current.missingImageUnits) LanSyncMissingImage.CODE else "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED"
+                rows[unit] = row(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, code = code)
                 continue
             }
             val ownCommittedValue = unit !in freshLocalRevisions && frontier.singleOrNull()?.let { fact ->
@@ -153,10 +154,12 @@ object LanSyncGroupNativePlanner {
         }
         val mediaOwners = linkedMapOf<String, MutableSet<String>>()
         records.forEach { (unit, record) -> LanSyncWorkspace.mapResources(record.body) { reference, _ ->
-            if (reference.startsWith("ccb-lan-v1/")) {
+            val media = if (reference.startsWith("ccb-lan-v1/")) {
                 val parts = reference.split('/'); require(parts.size == 5) { "SYNC_RESOURCE_REFERENCE" }
-                if (mediaOwners.getOrPut("${parts[1]}/${parts[2]}") { linkedSetOf() }.add(unit)) chargeIndex(240)
-            }; reference
+                "${parts[1]}/${parts[2]}"
+            } else LanSyncMissingImage.mediaId(reference)?.let { "images/$it" }
+            if (media != null && mediaOwners.getOrPut(media) { linkedSetOf() }.add(unit)) chargeIndex(240)
+            reference
         } }
         mediaOwners.values.forEach { link(it) }
         val remaining = allUnits.toMutableSet(); val processed = linkedSetOf<String>()
@@ -179,7 +182,7 @@ object LanSyncGroupNativePlanner {
             }
             try {
                 val candidate = replace(target, ready, rows)
-                candidate.validate(); LanSyncScope.validateGraph(candidate)
+                candidate.validate(); LanSyncScope.validateGraph(candidate, allowLocalMissingImages = true)
                 val expectedHashes = target.hashes().toMutableMap()
                 ready.forEach { unit -> rows.getValue(unit).frontiers.single().change.valueHash.let { if (it == null) expectedHashes.remove(unit) else expectedHashes[unit] = it } }
                 require(candidate.hashes() == expectedHashes) { "SYNC_GROUP_NATIVE_COMPONENT_REGROUPED" }
@@ -208,8 +211,9 @@ object LanSyncGroupNativePlanner {
         val references = LanSyncScope.referencedResources(rows)
         val snapshot = native.before.copy(records = Collections.unmodifiableList(rows), resources = Collections.unmodifiableMap(
             (native.before.resources + native.plan.snapshot.resources).filterKeys(references::contains)))
-        snapshot.validate(); LanSyncScope.validateGraph(snapshot)
-        val units = native.units.mapValues { (unit, row) -> if (unit in blocked && row.stage != LanSyncGroupNativeStage.UNCHANGED)
+        snapshot.validate(); LanSyncScope.validateGraph(snapshot, allowLocalMissingImages = true)
+        val units = native.units.mapValues { (unit, row) -> if (unit in blocked &&
+            row.stage != LanSyncGroupNativeStage.UNCHANGED && row.stage != LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED)
             row.copy(stage = LanSyncGroupNativeStage.DEPENDENCY_HELD, code = "SYNC_GROUP_RESOLUTION_HELD") else row }
         return LanSyncGroupNativePlan(native.before, native.plan.copy(snapshot = snapshot), native.checkpoint, native.heads,
             native.expected, native.sourceFiles, Collections.unmodifiableMap(units), native.appliedBefore,

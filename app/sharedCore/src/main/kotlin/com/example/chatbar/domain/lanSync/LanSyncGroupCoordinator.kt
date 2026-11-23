@@ -304,6 +304,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             "SYNC_GROUP_INVITE_EXPIRED_OR_CHANGED" -> "邀请已过期或设备组已更新。请重新生成邀请。"
             "SYNC_GROUP_INVITE_PUBLISHED_HISTORY_UNAVAILABLE" -> "暂时无法校验已发布的设备组历史。请重新检查同步。"
             "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" -> "本机会话有暂无法处理的图片。可以保留原图，并用兼容副本替换附件。其他会话可以同步。"
+            LanSyncMissingImage.CODE -> LanSyncGroupDisplay.missingLocalImageNotice(code)
             "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" -> joiningLedgerConflictText
             "SYNC_ORPHAN_SESSION" -> "发现找不到原会话的本机消息，原资料已保留。请恢复对应会话后重新检查同步。"
             "SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE" -> "本机正在生成或处理资料。完成后将继续检查同步。"

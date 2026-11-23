@@ -74,7 +74,7 @@ object LanSyncGroupResolution {
         require(operation.matches(Regex("[a-f0-9-]{36}")) && UUID.fromString(operation).toString() == operation) { "SYNC_GROUP_RESOLUTION_OPERATION" }
         require(!reconciled.trustBlocked && reconciled.ledgerCheckpoint == native.checkpoint && reconciled.history?.heads() == native.heads) { "SYNC_GROUP_RESOLUTION_VIEW" }
         require(current.snapshot == native.before && current.sourceFiles == native.sourceFiles && current.snapshot.hashes() == native.expected) { "SYNC_GROUP_RESOLUTION_SOURCE" }
-        val before = freezeSnapshot(current.snapshot); before.validate(); LanSyncScope.validateGraph(before)
+        val before = freezeSnapshot(current.snapshot); before.validate(); LanSyncScope.validateGraph(before, allowLocalMissingImages = true)
         val history = requireNotNull(reconciled.history).snapshot(); evidence.requireView(history, native.checkpoint)
         val facts = history.admittedVersions().associateBy { it.reference() }; val local = before.units()
         val verifiedResources = hashSetOf<Pair<Path, SyncPlaintextIdentity>>()
@@ -94,6 +94,7 @@ object LanSyncGroupResolution {
         } })
         require(frozenChoices.keys.all { it in native.units }) { "SYNC_GROUP_RESOLUTION_SELECTION" }
         val selected = frozenChoices.filterValues { it is LanSyncGroupResolutionChoice.Keep }.keys
+        require(selected.intersect(current.blockedResourceUnits).isEmpty()) { "SYNC_GROUP_LOCAL_RESOURCE_BLOCKED" }
         selected.forEach { unit ->
             val row = native.units.getValue(unit)
             require(row.stage != LanSyncGroupNativeStage.AUTHOR_FORK && row.frontiers.none { facts.getValue(it.version).author in history.authorForks() }) { "SYNC_GROUP_RESOLUTION_AUTHOR_FORK" }
@@ -217,7 +218,8 @@ object LanSyncGroupResolution {
         }
         val references = LanSyncScope.referencedResources(records)
         val target = freezeSnapshot(before.copy(records = records.sortedBy { it.key }, resources = resources.filterKeys(references::contains)))
-        target.validate(); LanSyncScope.validateGraph(target)
+        target.validate(); LanSyncScope.validateGraph(target, allowLocalMissingImages = true)
+        LanSyncMissingImage.requireRetained(before, target)
         val targetUnits = target.units()
         // Include same-value resolutions and copied units; held originals can never be claimed here.
         val resolved = selected + (targetUnits.keys - local.keys)

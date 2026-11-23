@@ -468,7 +468,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
             vault.verify(entry)
             val snapshot = vault.snapshot(entry)
             val retained = snapshot.units()
-            val units = vault.affected(entry).sorted().associateWith { unit ->
+            val unavailable = LanSyncMissingImage.units(snapshot)
+            val units = (vault.affected(entry) - unavailable).sorted().associateWith { unit ->
                 Collections.unmodifiableList(requireNotNull(retained[unit]) { "SYNC_RECOVERY_UNIT" }.toList())
             }
             LanSyncGroupRecoveryView(entry, Collections.unmodifiableMap(units))

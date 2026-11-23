@@ -144,7 +144,7 @@ class LanSyncGroupResolutionOwner(private val root: Path, private val workspace:
     private fun complete(state: State, row: Row): Row {
         if (row.stage != LanSyncGroupResolutionLocalStage.PREPARED) return row
         val data = data(row); val target = readSnapshot(root.resolve("target-${row.operation}.json"), data.target)
-        target.validate(); LanSyncScope.validateGraph(target)
+        target.validate(); LanSyncScope.validateGraph(target, allowLocalMissingImages = true)
         workspace.recover()
         if (!workspace.applied(row.operation)) {
             if (!fresh(data)) return update(state, row.copy(stage = LanSyncGroupResolutionLocalStage.NEEDS_REVIEW))

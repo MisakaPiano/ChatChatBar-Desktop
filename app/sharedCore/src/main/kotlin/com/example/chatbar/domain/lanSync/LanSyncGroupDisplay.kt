@@ -6,6 +6,9 @@ data class LanSyncGroupDisplayLabel(val title: String, val kind: String, val ide
 
 /** Presentation from frozen records only. Names never replace protocol identities or review bindings. */
 object LanSyncGroupDisplay {
+    fun missingLocalImageNotice(code: String?): String? =
+        if (code == LanSyncMissingImage.CODE) "本机会话的图片文件缺失。会话记录和附件引用已保留，其他会话可继续同步。" else null
+
     /** Presentation eligibility only; the resolution owner still validates the complete copied graph. */
     fun canOfferCopy(records: List<LanSyncRecord>): Boolean = records.isNotEmpty() && records.none { it.singleton }
     fun unit(unit: String, records: List<LanSyncRecord>): LanSyncGroupDisplayLabel {

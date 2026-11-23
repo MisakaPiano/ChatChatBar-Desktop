@@ -221,7 +221,10 @@ class LanSyncGroupNativeApplyOwner(private val root: Path, private val workspace
             acceptPreviousWholeDocumentBudget = true)) { "SYNC_GROUP_NATIVE_PAYLOAD_MISSING" }
         require(payload.plan.transaction == intent.transaction && payload.plan.snapshot.deviceId == actor.fingerprint && (payload.advances.isNotEmpty() || payload.sourceOperation != null) &&
             payload.rawSource.matches(Regex("[a-f0-9]{64}")) && payload.appliedBefore.matches(Regex("[a-f0-9]{64}"))) { "SYNC_GROUP_NATIVE_PAYLOAD_CHANGED" }
-        payload.plan.snapshot.validate(); LanSyncScope.validateGraph(payload.plan.snapshot)
+        payload.plan.snapshot.validate(); LanSyncScope.validateGraph(payload.plan.snapshot, allowLocalMissingImages = true)
+        val missingImages = LanSyncMissingImage.units(payload.plan.snapshot)
+        require(payload.advances.keys.intersect(missingImages).isEmpty() &&
+            payload.sourceVersion?.changes?.keys.orEmpty().intersect(missingImages).isEmpty()) { LanSyncMissingImage.CODE }
         val snapshotHashes = payload.plan.snapshot.hashes()
         require((payload.sourceOperation == null) == (payload.sourceVersion == null) && (payload.sourceOperation != null || payload.sourceHeld.isEmpty())) { "SYNC_GROUP_NATIVE_PAYLOAD_CHANGED" }
         payload.sourceVersion?.let { source ->

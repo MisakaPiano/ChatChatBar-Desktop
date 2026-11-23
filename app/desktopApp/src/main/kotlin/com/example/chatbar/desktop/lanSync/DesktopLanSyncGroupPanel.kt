@@ -216,7 +216,7 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
             val row = view?.plan?.units?.get(unit)
             val display = view?.let { LanSyncGroupDisplay.unit(it, unit) } ?: LanSyncGroupDisplay.unit(unit, emptyList())
             StatusText(display.identifier)
-            DesktopGroupReviewButton("查看 ${display.kind} · ${display.title} · ${row?.stage?.let(::desktopGroupFrozenStage).orEmpty()}",
+            DesktopGroupReviewButton("查看 ${display.kind} · ${display.title} · ${row?.let(::desktopGroupFrozenStage).orEmpty()}",
                 { view?.let { actions.closeImagePreview(); selected = it to unit } })
         }
         if (units.size > 10) ActionRow {
@@ -232,6 +232,7 @@ private fun DesktopGroupFrozenReviewBrowser(view: LanSyncGroupNodeView?, busy: B
     val display = LanSyncGroupDisplay.unit(frozen.first, unit)
     StatusText("已冻结：${display.kind} · ${display.title}")
     StatusText(display.identifier)
+    LanSyncGroupDisplay.missingLocalImageNotice(row.code)?.let { StatusText(it) }
     StatusText("同步继续运行；这里保留所选检查结果，重新选择内容组可查看新的结果。图片从本次冻结内容对应的本机缓存中读取。")
     DesktopGroupReviewButton("关闭冻结详情", { actions.closeImagePreview(); selected = null })
     if (unit !in frozen.first.reservedUnits && row.stage in setOf(LanSyncGroupNativeStage.LOCAL_PROPOSAL,
@@ -452,7 +453,7 @@ internal fun DesktopGroupFrozenRecords(label: String, unit: String, records: Lis
     }
 }
 
-private fun desktopGroupFrozenStage(stage: LanSyncGroupNativeStage): String = when (stage) {
+private fun desktopGroupFrozenStage(row: LanSyncGroupNativeUnit): String = when (row.stage) {
     LanSyncGroupNativeStage.UNCHANGED -> "无变化"
     LanSyncGroupNativeStage.READY_CONTENT -> "传入内容已就绪"
     LanSyncGroupNativeStage.READY_DELETION -> "传入删除"
@@ -462,7 +463,8 @@ private fun desktopGroupFrozenStage(stage: LanSyncGroupNativeStage): String = wh
     LanSyncGroupNativeStage.CONFLICT -> "多版本待选择"
     LanSyncGroupNativeStage.AUTHOR_FORK -> "同一设备版本分叉"
     LanSyncGroupNativeStage.WAITING_DEPENDENCY -> "等待正文或附件"
-    LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED -> "本机会话有暂无法处理的图片，原件已保留"
+    LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED ->
+        if (LanSyncGroupDisplay.missingLocalImageNotice(row.code) != null) "本机图片文件缺失" else "本会话图片暂缓处理"
     LanSyncGroupNativeStage.RECORD_REVIEW -> "记录归属待核对"
     LanSyncGroupNativeStage.DEPENDENCY_HELD -> "关联内容暂缓"
     LanSyncGroupNativeStage.INVALID_MIXED_GRAPH -> "关联资料尚未通过检查"

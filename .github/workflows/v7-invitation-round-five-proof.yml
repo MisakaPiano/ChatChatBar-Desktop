@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  invitation-resume:
+  missing-image:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -20,15 +20,18 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Verify invitation refresh and delayed approval after the inviter exits
+      - name: Verify that a missing owned photo does not block independent conversations
         working-directory: app
         run: |
           bash ./gradlew :sharedCore:test \
-            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupCoordinatorTest.inviterExitAndExpiredReplacementKeepTheSameApplicationAndAcceptLaterSignedApproval' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupNodeTest.aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncGroupEnrollmentTest.initialFounderWithMissingOwnedMessageImageCanPublishAnIndependentUnitAndReopen' \
+            --tests 'com.example.chatbar.domain.lanSync.LanSyncWorkspaceTest.onlyConfirmedOwnedMissingMessageImagesAreIsolated' \
+            :desktopApp:compileKotlin :app:compileLanPreviewKotlin \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-r05-invitation-resume
+          name: v7-r05-missing-image
           path: app/sharedCore/build/test-results/test/TEST-*.xml

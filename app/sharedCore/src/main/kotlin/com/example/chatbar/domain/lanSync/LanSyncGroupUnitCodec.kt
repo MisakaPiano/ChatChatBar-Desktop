@@ -45,7 +45,8 @@ class LanSyncGroupUnitCodec(private val privateDirectory: Path,
 
     @OptIn(ExperimentalSerializationApi::class)
     fun prepare(capture: LanSyncCapture, unit: String): LanSyncPreparedGroupUnit {
-        capture.snapshot.validate(); LanSyncScope.validateGraph(capture.snapshot)
+        require(unit !in capture.missingImageUnits) { LanSyncMissingImage.CODE }
+        capture.snapshot.validate(); LanSyncScope.validateGraph(capture.snapshot, allowLocalMissingImages = true)
         require(capture.snapshot.coveredTypes == coverage) { "SYNC_GROUP_SCOPE" }
         val records = requireNotNull(capture.snapshot.units()[unit]) { "SYNC_GROUP_UNIT_MISSING" }
         return prepareValidated(capture.snapshot, unit, records)

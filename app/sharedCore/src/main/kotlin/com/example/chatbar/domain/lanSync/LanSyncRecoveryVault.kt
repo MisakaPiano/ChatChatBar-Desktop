@@ -83,7 +83,7 @@ class LanSyncRecoveryVault(
     /** Prepublication source custody, including raw local choices; not a publication/approval receipt. */
     fun checkpointSource(dataRoot: Path, current: LanSyncCapture, group: SyncStoreId, revision: String,
         projection: LanSyncProjection = LanSyncProjection()): LanSyncRecoveryEntry? = withEntry(revision) {
-        current.snapshot.validate(); LanSyncScope.validateGraph(current.snapshot); projection.validate()
+        current.snapshot.validate(); LanSyncScope.validateGraph(current.snapshot, allowLocalMissingImages = true); projection.validate()
         if (current.snapshot.records.isEmpty()) {
             require(!Files.exists(directory(revision), LinkOption.NOFOLLOW_LINKS)) { "SYNC_RECOVERY_PLAN_CHANGED" }
             return@withEntry null
@@ -268,7 +268,7 @@ class LanSyncRecoveryVault(
             LanSyncScope.validateLegacyPending(stored)
             stored.copy(protocol = LAN_SYNC_PROTOCOL, records = stored.records.map { it.copy(body = LanSyncScope.normalize(it.type, it.body)) })
         }
-        compatible.validate(); LanSyncScope.validateGraph(compatible)
+        compatible.validate(); LanSyncScope.validateGraph(compatible, allowLocalMissingImages = entry.hasLocalOriginals && stored.protocol == LAN_SYNC_PROTOCOL)
         require(compatible.deviceId == entry.sourceDevice) { "SYNC_RECOVERY_DAMAGED" }
         val hashes = compatible.hashes()
         require(binding(hashes) == entry.sourceBinding && compatible.records.size.toLong() == entry.recordCount &&

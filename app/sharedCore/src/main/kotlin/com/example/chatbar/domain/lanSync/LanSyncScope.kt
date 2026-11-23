@@ -108,12 +108,14 @@ object LanSyncScope {
         }
     }
 
-    fun validateGraph(snapshot: LanSyncSnapshot) {
+    fun validateGraph(snapshot: LanSyncSnapshot) = validateGraph(snapshot, allowLocalMissingImages = false)
+
+    internal fun validateGraph(snapshot: LanSyncSnapshot, allowLocalMissingImages: Boolean) {
         snapshot.records.forEach(::validateRecord)
         LanSyncStudioCurrent.validateGraph(snapshot.records)
         require(snapshot.records.none { it.type == "format_cards" && it.body["isDefault"] != JsonPrimitive(false) }) { "SYNC_DEVICE_DEFAULT_ON_WIRE" }
         require(snapshot.records.none { it.type == "moment_tasks" && it.body["requiresLocalScheduleApproval"] != JsonPrimitive(true) }) { "SYNC_SCHEDULE_AUTHORITY_ON_WIRE" }
-        validateResourceReferences(snapshot)
+        validateResourceReferences(snapshot, allowLocalMissingImages)
         val ids = snapshot.records.groupBy { it.type }.mapValues { (_, rows) -> rows.map { it.id }.toSet() }
         val messages = snapshot.records.filter { it.type == "chat_messages" }.associateBy { it.id }
         snapshot.records.forEach { record ->
@@ -135,29 +137,37 @@ object LanSyncScope {
     }
 
     /** Same reference contract for a decoded unit, without inventing its absent cross-unit dependencies. */
-    internal fun validateResourceReferences(snapshot: LanSyncSnapshot) {
+    internal fun validateResourceReferences(snapshot: LanSyncSnapshot, allowLocalMissingImages: Boolean = false) {
         val referenced = linkedSetOf<String>()
         val mediaIdentities = linkedMapOf<String, String>()
-        snapshot.records.forEach { record -> LanSyncWorkspace.mapResources(record.body) { reference, field ->
-            when {
-                reference.isBlank() || field != "vibePayload" && reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
-                record.type == "save_slots" && field != "vibePayload" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
-                    reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) -> Unit
-                else -> {
-                    val parts = reference.split('/')
-                    require(parts.size == 5 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages", "payloads") &&
-                        parts[2].matches(Regex("[a-f0-9-]{36}")) && parts[3].matches(Regex("[a-f0-9]{64}")) && parts[4].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_EXTERNAL_WIRE_REFERENCE" }
-                    require((field == "packageFile") == (parts[1] == "packages") && (field == "audioPath") == (parts[1] == "audio") &&
-                        (field == "vibePayload") == (parts[1] == "payloads")) { "SYNC_RESOURCE_KIND" }
-                    require(parts[3] in snapshot.resources) { "SYNC_RESOURCE_MANIFEST" }
-                    val identity = "${parts[1]}/${parts[2]}"
-                    require(mediaIdentities[identity]?.let { it == parts[3] } != false) { "SYNC_RESOURCE_ID_CHANGED" }
-                    mediaIdentities[identity] = parts[3]
-                    referenced += parts[3]
+        snapshot.records.forEach { record ->
+            val body = record.body
+            val localImages = if (allowLocalMissingImages && record.type == "chat_messages")
+                LanSyncMissingImage.images(body["images"] as? JsonArray).filter(LanSyncMissingImage::isMarker).toSet()
+            else emptySet()
+            LanSyncWorkspace.mapResources(body) { reference, field ->
+                when {
+                    reference.isBlank() || field != "vibePayload" && reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) -> Unit
+                    record.type == "save_slots" && field != "vibePayload" && (reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_IMAGE_PREFIX) ||
+                        reference.startsWith(com.example.chatbar.domain.chat.SAVE_SLOT_AUDIO_PREFIX)) -> Unit
+                    reference in localImages && LanSyncMissingImage.allows(record.type, field) &&
+                        LanSyncMissingImage.mediaId(reference) != null -> Unit
+                    else -> {
+                        val parts = reference.split('/')
+                        require(parts.size == 5 && parts[0] == "ccb-lan-v1" && parts[1] in setOf("images", "documents", "audio", "packages", "payloads") &&
+                            parts[2].matches(Regex("[a-f0-9-]{36}")) && parts[3].matches(Regex("[a-f0-9]{64}")) && parts[4].matches(Regex("[a-z0-9]{1,8}"))) { "SYNC_EXTERNAL_WIRE_REFERENCE" }
+                        require((field == "packageFile") == (parts[1] == "packages") && (field == "audioPath") == (parts[1] == "audio") &&
+                            (field == "vibePayload") == (parts[1] == "payloads")) { "SYNC_RESOURCE_KIND" }
+                        require(parts[3] in snapshot.resources) { "SYNC_RESOURCE_MANIFEST" }
+                        val identity = "${parts[1]}/${parts[2]}"
+                        require(mediaIdentities[identity]?.let { it == parts[3] } != false) { "SYNC_RESOURCE_ID_CHANGED" }
+                        mediaIdentities[identity] = parts[3]
+                        referenced += parts[3]
+                    }
                 }
+                reference
             }
-            reference
-        } }
+        }
         require(referenced == snapshot.resources.keys) { "SYNC_UNREFERENCED_RESOURCE" }
     }
 

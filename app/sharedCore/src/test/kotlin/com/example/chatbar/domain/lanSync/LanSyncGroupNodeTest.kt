@@ -67,7 +67,8 @@ class LanSyncGroupNodeTest {
             val runtime = Files.createDirectory(base.resolve("runtime")); val custodyRoot = Files.createDirectory(base.resolve("custody"))
             var journalHook: (String, Int) -> Unit = { _, _ -> }
             var resourceValidator: (String, Path, LanSyncRecord) -> Unit = { _, _, _ -> }
-            val workspace = LanSyncWorkspace(data, Files.createDirectory(base.resolve("workspace")), { Path.of(it) },
+            val workspace = openWorkspace()
+            fun openWorkspace() = LanSyncWorkspace(data, base.resolve("workspace"), { Path.of(it) },
                 observeJournal = { stage, index -> journalHook(stage, index) }, validateResource = { kind, path, record ->
                     resourceValidator(kind, path, record)
                 })
@@ -82,7 +83,8 @@ class LanSyncGroupNodeTest {
                 }
                 override suspend fun reload(sessionIds: Set<String>) { check(gated); reloads++ }
             }
-            fun open(dependencies: CiphertextStore = backend) = LanSyncGroupNode(runtime, workspace, platform, identities[index], trust, custody(), recipients[index], dependencies,
+            fun open(dependencies: CiphertextStore = backend, workspaceOwner: LanSyncWorkspace = workspace) =
+                LanSyncGroupNode(runtime, workspaceOwner, platform, identities[index], trust, custody(), recipients[index], dependencies,
                 { it.reversedArray() }, { it.reversedArray() }, { emptySet() }, { kind, path, record ->
                     resourceValidator(kind, path, record)
                 }, observe = { hook(it) })
@@ -315,6 +317,103 @@ class LanSyncGroupNodeTest {
         assertContentEquals(originalRecord, Files.readAllBytes(localA))
         assertEquals(originalFileHash, LanSyncResourceStore.hashFile(photo, Files.size(photo)))
         assertTrue(requireNotNull(publisher.scan(origin).plan).advances.isEmpty())
+    }
+
+    @Test fun aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen() = withGroup { group ->
+        val publisher = group.End(0); val local = group.End(1)
+        val origin = publisher.enroll(); val receiver = local.enroll()
+        val a = "conversation/a"; val b = "conversation/b"; val c = "conversation/c"
+        fun path(end: Group.End, type: String, name: String): Path =
+            Files.createDirectories(end.data.resolve("entities/$type")).resolve("$name.json")
+        fun session(id: String, title: String = id) = LanSyncJsonFiles.write(path(publisher, "chat_sessions", id),
+            ChatSession.serializer(), ChatSession(id, "card", title, createdAt = 1, updatedAt = 1))
+        fun message(end: Group.End, session: String, id: String, body: String, photo: Path? = null) =
+            LanSyncJsonFiles.write(path(end, "chat_messages", "${session}_$id"), ChatMessage.serializer(),
+                ChatMessage(id, session, MessageRole.USER, body, images = listOfNotNull(photo?.toString()), createdAt = 2, updatedAt = 2))
+        suspend fun send(units: Set<String>) {
+            val review = origin.inspect().review(units)
+            publisher.send(origin, origin.commit(review, confirmations = review.requiredBindings))
+        }
+
+        val image = Files.createDirectories(publisher.data.resolve("images")).resolve("published.png")
+        val raster = BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB)
+        try { assertTrue(ImageIO.write(raster, "png", image.toFile())) } finally { raster.flush() }
+        val bytes = Files.readAllBytes(image)
+        val independent = Files.write(image.resolveSibling("different-media-id.png"), bytes)
+        session("a"); session("b"); message(publisher, "a", "old", "A 已发表的附件", image)
+        send(setOf(a, b)); receiver.apply(requireNotNull(local.scan(receiver).plan))
+        val oldReceipt = receiver.inspect().nativeState.units.getValue(a)
+        val recordA = path(local, "chat_messages", "a_old")
+        val rawA = Files.readAllBytes(recordA)
+        val localImage = Path.of(requireNotNull(LanSyncJsonFiles.read(recordA, ChatMessage.serializer())).images.single())
+        assertContentEquals(bytes, Files.readAllBytes(localImage))
+        Files.delete(localImage)
+
+        session("a", "远端尝试更新 A")
+        session("c")
+        message(publisher, "b", "in", "B 收到独立附件", independent)
+        message(publisher, "c", "linked", "复用 A 的真实媒体身份", image)
+        send(setOf(a, b, c))
+        val view = local.scan(receiver); val plan = requireNotNull(view.plan)
+        assertEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, plan.units.getValue(a).stage)
+        assertEquals(LanSyncMissingImage.CODE, plan.units.getValue(a).code)
+        assertEquals(setOf(a, c), plan.components.getValue(a))
+        assertEquals(setOf(b), plan.components.getValue(b))
+        assertEquals(LanSyncGroupNativeStage.DEPENDENCY_HELD, plan.units.getValue(c).stage)
+        assertEquals(setOf(b), plan.advances.keys)
+        assertFailsWith<IllegalArgumentException> { view.review(setOf(a)) }
+        receiver.apply(plan)
+        val received = requireNotNull(LanSyncJsonFiles.read(path(local, "chat_messages", "b_in"), ChatMessage.serializer()))
+        assertEquals("B 收到独立附件", received.content)
+        assertContentEquals(bytes, Files.readAllBytes(Path.of(received.images.single())))
+        assertContentEquals(rawA, Files.readAllBytes(recordA))
+        assertFalse(Files.exists(localImage))
+        assertEquals(oldReceipt, receiver.inspect().nativeState.units.getValue(a))
+
+        Files.delete(path(publisher, "chat_messages", "a_old")); Files.delete(path(publisher, "chat_sessions", "a"))
+        send(setOf(a))
+        val deletion = requireNotNull(local.scan(receiver).plan)
+        assertNull(deletion.units.getValue(a).frontiers.single().change.valueHash)
+        assertEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, deletion.units.getValue(a).stage)
+        assertFalse(a in deletion.advances)
+        message(local, "b", "out", "B 仍可发送")
+        val reply = receiver.commit(receiver.inspect().review(setOf(b)))
+        assertEquals(setOf(b), reply.entry.version.changes.keys)
+        local.send(receiver, reply)
+        origin.apply(requireNotNull(publisher.scan(origin).plan))
+        assertEquals("B 仍可发送", LanSyncJsonFiles.read(path(publisher, "chat_messages", "b_out"), ChatMessage.serializer())?.content)
+
+        val reopenedWorkspace = local.openWorkspace()
+        val cold = local.open(workspaceOwner = reopenedWorkspace)
+        val retained = requireNotNull(reopenedWorkspace.recovery.read(reply.entry.request.sourceCheckpoint))
+        reopenedWorkspace.recovery.verify(retained)
+        assertEquals(setOf(b), cold.browseRecovery(retained.transaction).units.keys)
+        assertEquals(LanSyncMissingImage.CODE, assertFailsWith<IllegalArgumentException> {
+            cold.prepareRecovery(retained.transaction, a)
+        }.message)
+        val coldView = cold.inspect()
+        assertEquals(oldReceipt, coldView.nativeState.units.getValue(a))
+        assertEquals(LanSyncMissingImage.CODE, requireNotNull(coldView.plan).units.getValue(a).code)
+        assertContentEquals(rawA, Files.readAllBytes(recordA))
+        assertFalse(Files.exists(localImage))
+        local.workspace.captureGroup(group.identities[1].fingerprint).use { capture ->
+            assertEquals(setOf(a), capture.missingImageUnits)
+            assertFailsWith<IllegalArgumentException> { LanSyncScope.validateGraph(capture.snapshot) }
+            assertEquals(LanSyncMissingImage.CODE, assertFailsWith<IllegalArgumentException> {
+                LanSyncGroupUnitCodec(local.base).prepare(capture, a).close()
+            }.message)
+            val dropped = capture.snapshot.copy(records = capture.snapshot.records.filter { it.unit != a })
+            assertEquals(LanSyncMissingImage.CODE, assertFailsWith<IllegalArgumentException> {
+                local.workspace.apply(LanSyncPlan(java.util.UUID.randomUUID().toString(), dropped, emptyMap()), capture.snapshot.hashes(),
+                    group.identities[1].fingerprint, capture.blobs, isolateLocalImages = true)
+            }.message)
+        }
+        Files.write(localImage, bytes)
+        val restored = cold.inspect()
+        assertFalse(requireNotNull(restored.plan).units.getValue(a).stage == LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED)
+        assertEquals(oldReceipt, restored.nativeState.units.getValue(a))
+        assertContentEquals(rawA, Files.readAllBytes(recordA))
+        assertContentEquals(bytes, Files.readAllBytes(localImage))
     }
 
     @Test fun coldSourceOnlyRetriesWithOrWithoutMetadataPrefetchReuseTheOriginalLocalReceiptWithoutNativeOrLiveRouteWork() = withGroup { g ->
