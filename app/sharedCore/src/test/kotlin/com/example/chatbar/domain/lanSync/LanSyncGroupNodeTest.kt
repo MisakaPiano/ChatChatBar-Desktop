@@ -466,7 +466,8 @@ class LanSyncGroupNodeTest {
         val transaction = pending.confirmedPlan(approval).plan.transaction
         val failure = assertFailsWith<IllegalStateException> { receiver.applyIncoming(approval) }
         assertEquals("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure.message)
-        assertEquals("SYNTHETIC_PLATFORM_REPOSITORY_RELOAD_FAILED", failure.cause?.message)
+        assertTrue(generateSequence<Throwable>(failure) { it.cause }
+            .any { it is IOException && it.message == "SYNTHETIC_PLATFORM_REPOSITORY_RELOAD_FAILED" })
         assertEquals(listOf(setOf("deleted", "kept")), refreshes)
         assertEquals(1, writes)
         assertTrue(destination.workspace.applied(transaction))

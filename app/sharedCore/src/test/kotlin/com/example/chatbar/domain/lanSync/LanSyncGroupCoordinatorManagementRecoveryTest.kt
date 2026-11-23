@@ -122,8 +122,9 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                         return peer
                     }
                     suspend fun receiveFrom(runtime: LanSyncGroupRuntimeAccess, from: CiphertextStore) {
+                        val route = runtime.reader.discoveryFrom(from, "synthetic-management-peer")
                         var cursor: CommitCursor? = null
-                        do { cursor = runtime.node.discover(from, cursor).nextCursor } while (cursor != null)
+                        do { cursor = runtime.node.discover(route, cursor).nextCursor } while (cursor != null)
                     }
                     fun remote(caller: LanSyncGroupAppTransport, host: LanSyncGroupRuntimeAccess, port: Int) =
                         caller.remote(LanSyncPeer(host.device, "synthetic previously approved member", "10.0.0.1", port))
@@ -211,11 +212,32 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             cold.startIfConfigured()
                             await { !cold.state.value.busy && cold.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
                             assertEquals(warm, cold.state.value.membershipConflict)
+                            cold.pauseAndDrain()
+                            cold.resumeIfConfigured()
+                            await { !cold.state.value.paused && !cold.state.value.busy }
+                            assertEquals(warm, cold.state.value.membershipConflict)
+                            assertTrue(cold.state.value.status.startsWith("成员变更冲突"))
                             cold.recoverManagement(founder.code)
                             await { cold.state.value.error?.contains("SYNC_GROUP_MEMBERSHIP_CONFLICT") == true }
                             assertFalse(cold.state.value.managementUnlocked)
                         } finally { cold.closeAndDrain() }
                         assertEquals(setOf(cRow, dRow), requireNotNull(b.verifiedLedgerFork()).branches.toSet())
+
+                        founder.service.close()
+                        val founderPlatform = object : LanSyncPlatform {
+                            override suspend fun exclusive(work: suspend () -> Unit) = work()
+                            override suspend fun reload(sessionIds: Set<String>) = fail("Conflicted root must stay offline")
+                        }
+                        val reopenedFounder = LanSyncGroupEnrollment(founder.profile, founder.workspace, founderPlatform,
+                            founder.identity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
+                        val aCold = LanSyncGroupCoordinator({ true }, { reopenedFounder }, { fail("Unexpected join owner") },
+                            network, "synthetic original founder")
+                        try {
+                            aCold.startIfConfigured()
+                            await { !aCold.state.value.busy && aCold.state.value.stage == LanSyncGroupPanelStage.MEMBERSHIP_CONFLICT }
+                            assertEquals(warm, aCold.state.value.membershipConflict)
+                            assertFalse(aCold.state.value.managementCanInvite)
+                        } finally { aCold.closeAndDrain() }
                     }
                     originals.forEach { (file, raw) -> assertContentEquals(raw, Files.readAllBytes(file)) }
                 } finally { endpoints.forEach { it.closeAndDrain() }; joined.close() }

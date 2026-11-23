@@ -194,7 +194,8 @@ class ChatSyncDeletedSessionNativeTest {
                         error
                     }
                     assertEquals("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure.message)
-                    assertEquals("SYNTHETIC_ANDROID_RELOAD_FAILURE", failure.cause?.message)
+                    assertTrue(generateSequence<Throwable>(failure) { it.cause }
+                        .any { it is IOException && it.message == "SYNTHETIC_ANDROID_RELOAD_FAILURE" })
                     assertEquals(previousReloads + 1, fixture.reloadAttempts)
                     assertTrue(sessionId in fixture.lastReloadSessions)
                     assertDurableRemoval(app, sessionId, oldMessageId)

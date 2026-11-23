@@ -354,7 +354,10 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             shutdownAdmission.withLock {
                 if (closed || generation != actionGeneration.get() || !hasExistingEvidence()) return@withLock
                 paused = false
-                mutableState.update { it.copy(paused = false, status = "正在恢复设备组同步") }
+                mutableState.update { state ->
+                    if (state.membershipConflict == null) state.copy(paused = false, status = "正在恢复设备组同步")
+                    else state.copy(paused = false)
+                }
                 action("恢复设备组同步") {
                     openConfiguredProfile()
                     if (pendingJoinProof == generation) {
@@ -1323,7 +1326,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (stage == "NEARBY_PENDING_APPROVAL") return
         var restart = false
         synchronized(lifecycle) {
-            if (closed || paused) return
+            if (closed || paused || state.value.membershipConflict != null) return
             if (stage == "GROUP_DISCOVERY_LISTENER" || stage == "NEARBY_LISTENER") {
                 nearbyReady = false
                 nearbyRestartRequested = true
@@ -1400,7 +1403,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         false
     }
     private fun startLoop() = synchronized(lifecycle) {
-        if (loop?.isActive == true || closed || paused) return
+        if (loop?.isActive == true || closed || paused || state.value.membershipConflict != null) return
         localWorker = scope.launch {
             for (ignored in localWake) {
                 delay(250)
@@ -1491,7 +1494,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
     private fun cloudProgress(progress: Map<SyncStoreId, LanSyncGroupCloudRouteProgress>) {
         mutableCloudSettings.update { it.copy(progress = progress) }
         val completed = progress.values.filter { it.selectionObserved && it.lastObservedAt != null }
-        mutableState.update { state -> state.copy(cloud = LanSyncGroupRouteStatus(
+        mutableState.update { state -> if (state.membershipConflict != null) state else state.copy(cloud = LanSyncGroupRouteStatus(
             if (progress.isEmpty()) "此设备没有启用的网盘连接"
             else if (completed.size == progress.size) "已核对 ${completed.size} 个目标的所选密文；设备组仍按当前状态检查"
             else "网盘待核对 ${progress.size - completed.size} 个目标，已完成记录与待传队列均保留",
@@ -1723,9 +1726,12 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             discovery = null; transport = null; port = null; nearbyReady = false; nearbyRestartRequested = false; nearbyScan = null
             loop = null; nearbyWorker = null; localWorker = null; cloudWorker = null
             access?.reader?.routes(emptyList())
-            mutableState.update { it.copy(paused = true, busy = false, status = "设备组同步已暂停，原件与待传队列已保留",
-                nearby = LanSyncGroupRouteStatus("附近设备连接检查已暂停", it.nearby.lastSuccessAt), nearbyNotice = null,
-                devices = resetNearbyObservations(it)) }
+            mutableState.update { state ->
+                if (state.membershipConflict != null) state.copy(paused = true, busy = false)
+                else state.copy(paused = true, busy = false, status = "设备组同步已暂停，原件与待传队列已保留",
+                    nearby = LanSyncGroupRouteStatus("附近设备连接检查已暂停", state.nearby.lastSuccessAt), nearbyNotice = null,
+                    devices = resetNearbyObservations(state))
+            }
         }
     }
     /** Terminal shutdown; retains daily owners until final source sealing. */

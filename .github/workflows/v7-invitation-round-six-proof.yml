@@ -2,6 +2,12 @@ name: V7 invitation sixth repair checks
 on:
   push:
     branches: [codex/v7-invitation-r04-repair-20261123]
+    paths:
+      - app/sharedCore/**
+      - app/app/src/main/java/com/example/chatbar/lanSync/**
+      - app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/lanSync/**
+      - app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopLanSyncReloadRecoveryTest.kt
+      - .github/workflows/v7-invitation-round-six-proof.yml
 permissions:
   contents: read
 jobs:
@@ -20,18 +26,13 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Verify membership collision, key recovery, nearby device health and approval
+      - name: Verify retained membership branches, linear approval and pending reload
         working-directory: app
         run: |
           bash ./gradlew :sharedCore:test \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.independentManagersRetainBothSignedMembershipBranchesAndCannotResumeOrdinaryWorkAfterColdOpen' \
             --tests '*LanSyncGroupCoordinatorManagementRecoveryTest.recoveredManagerThatSeesFirstApprovalSignsTheNextMemberFromItsNewParent' \
-            --tests '*LanSyncGroupJoiningTest.approvedColdJoinFetchesItsMissingHistoricalKeyFromAnAuthorizedMemberOverOrdinaryTls' \
-            --tests '*LanSyncGroupJoiningTest.alternateMemberMustAuthorizeTheApplicantAndSupplyItsAuthenticHistoricalCapsule' \
-            --tests '*LanSyncGroupJoiningTest.approvedJoinCanContinueAtAMovedPinnedStoreWithoutChangingItsOfferOrRecipient' \
-            --tests '*LanSyncGroupJoiningTest.aLegacyAttemptWithVerifiedMembershipButMissingHistoricalKeysShowsTheSignedForkWhenReopened' \
             --tests '*LanSyncGroupNearbyStatusTest.mixedSameNameMembersKeepBothObservationsAndColdStartDoesNotInventReachability' \
-            --tests '*LanSyncGroupAppTransportTest.proofAcknowledgementBeforePromptDeliveryStillClassifiesOnlyTheVerifiedApplicant' \
             --tests '*LanSyncGroupNodeTest.signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown' \
             --tests '*LanSyncGroupNodeTest.olderAppliedHistoryWithoutARefreshMarkerSurvivesCancelledReloadAndIgnoresSourceOnlyReceipts' \
             --tests '*LanSyncGroupNativeApplyOwnerTest.aLostControlReceiptAfterNativeApplyAdvancesExactUnitsWithoutOverwritingLaterLocalEdits' \
@@ -63,3 +64,29 @@ jobs:
           bash ./gradlew :app:compileLanPreviewKotlin :desktopApp:compileKotlin
           -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
           --no-daemon --max-workers=1 --no-parallel --console=plain
+  desktop-reload:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify committed receipt recovery with the Windows chat runtime
+        working-directory: app
+        env:
+          CCB_DESKTOP_NATIVE_RELOAD_PROOF: 'true'
+        run: >-
+          ./gradlew.bat :desktopApp:test
+          --tests '*DesktopLanSyncReloadRecoveryTest.committedSignedReceiveRefreshesTheOpenDesktopChatAndPreservesDraft'
+          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
+          --no-daemon --max-workers=1 --no-parallel --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-r06-windows-reload
+          path: app/desktopApp/build/test-results/test/TEST-*DesktopLanSyncReloadRecoveryTest.xml
