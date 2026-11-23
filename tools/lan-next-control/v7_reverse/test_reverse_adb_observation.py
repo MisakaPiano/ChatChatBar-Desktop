@@ -129,4 +129,100 @@ class AdbEvidenceTests(unittest.TestCase):
     def test_real_driver_preserves_cat_failure_before_cleanup(self):self.run_mock_driver(True)
 
 
+    def test_ready_retry_exact_predicate_refuses_other_conditions(self):
+        value=evidence.observation('PRIVATE_READY_STAT',255,b'',b'')
+        self.assertTrue(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,value))
+        for name,phase,before,after,used in [('progress.json','ONE_INSTRUMENTATION',True,True,False),
+            ('ready.json','PRIVATE_OFFER',True,True,False),('ready.json','ONE_INSTRUMENTATION',False,True,False),
+            ('ready.json','ONE_INSTRUMENTATION',True,False,False),('ready.json','ONE_INSTRUMENTATION',True,True,True)]:
+            self.assertFalse(control.ready_stat_255_retry_allowed(name,phase,before,after,used,value))
+        for code,out,err in ((255,b'x',b''),(255,b'',b'x'),(1,b'',b'')):
+            row=evidence.observation('PRIVATE_READY_STAT',code,out,err)
+            self.assertFalse(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
+        row=dict(value);row['stdoutCapped']=0
+        self.assertFalse(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
+        row=evidence.observation('PRIVATE_READY_CAT',255,b'',b'')
+        self.assertFalse(control.ready_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
+
+    def run_ready_retry_driver(self,continuous=False,initially_active=True,exit_during_wait=False,cat_error=False):
+        here=Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory(prefix='pure-ready-',dir=here) as temporary:
+            runner=Path(temporary).resolve();self.assertEqual(runner.parent,here)
+            lab=runner/'ccb-v7-live';lab.mkdir();out=runner/'small';out.mkdir();result=out/'android.json'
+            calls=[];sleep_calls=[];state={'stat':0,'active':initially_active}
+            class FakeProcess:
+                def poll(self):return None if state['active'] else 1
+                def terminate(self):state['active']=False
+                def kill(self):state['active']=False
+                def wait(self,timeout=None):return self.poll()
+            def fake_run(argv,**kwargs):
+                args=argv[3:];calls.append(args);code=0;stdout=b'';stderr=b''
+                if args==['shell','getprop','ro.kernel.qemu']:stdout=b'1\n'
+                elif args==['shell','getprop','ro.build.version.sdk']:stdout=b'26\n'
+                elif args[:3]==['shell','dumpsys','package']:stdout=b'versionCode=87 DEBUGGABLE\n'
+                elif args[:3]==['shell','pm','path']:stdout=b'package:/data/app/synthetic/base.apk\n'
+                elif args[:3]==['shell','toybox','sha256sum']:stdout=b'a'*64+b'  synthetic\n'
+                elif args==['features']:stdout=b'shell_v2\ncmd\n'
+                elif args[-1:]==['pwd']:stdout=('/data/user/0/'+control.PACKAGE+'\n').encode()
+                elif args[-1:]==[control.APP_LAB+'progress.json']:code=1;stderr=self.stat_missing('progress.json')
+                elif args[-1:]==[control.APP_LAB+'ready.json']:
+                    if 'stat' in args:
+                        state['stat']+=1
+                        if state['stat']==1 or continuous:code=255
+                        else:stdout=b'36\n'
+                    elif cat_error:code=255
+                    else:
+                        stdout=b'{"kind":"CCB_V7_ANDROID_READY","ready":true}'
+                        (lab/'android-stop-requested.json').write_text('{"kind":"CCB_V7_REVERSE_STOP","reason":"PEER_OR_CONTROL_FAILED"}')
+                elif 'rm' not in args:raise AssertionError('UNEXPECTED_MOCK_OPERATION')
+                return types.SimpleNamespace(returncode=code,stdout=stdout,stderr=stderr)
+            def fake_sleep(seconds):
+                sleep_calls.append(seconds)
+                if exit_during_wait:state['active']=False
+            argv=['control','--adb',str(runner/'not-executed-adb'),'--control-tools',str(here.parent),
+                '--serial','emulator-5554','--candidate-sha256','a'*64,'--test-sha256','a'*64,
+                '--private-root',str(lab),'--result',str(result)]
+            with patch.object(sys,'argv',argv),patch.dict(os.environ,{'GITHUB_ACTIONS':'true','RUNNER_OS':'Windows','RUNNER_TEMP':str(runner)}),\
+                 patch.object(control.subprocess,'run',fake_run),patch.object(control.subprocess,'Popen',lambda *a,**k:FakeProcess()),\
+                 patch.object(control.time,'sleep',fake_sleep),patch.dict(sys.modules,{'instrumentation_report':types.SimpleNamespace()}),\
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(control.main(),2) # The pure test deliberately stops before any pairing/native claim.
+            value=json.loads(result.read_bytes());self.assertFalse(value['oneNativeMethodPassed'])
+            self.assertFalse(any(args[:1]==['forward'] for args in calls))
+            return value,state['stat'],sleep_calls
+
+    def test_ready_255_once_can_reach_exact_ready_then_controlled_stop(self):
+        value,reads,sleeps=self.run_ready_retry_driver()
+        self.assertTrue(value['readyObserved']);self.assertEqual(reads,2)
+        self.assertEqual(value['readyStatRetry']['retryAttempts'],1)
+        self.assertEqual(value['readyStatRetry']['firstObservation']['exitCode'],255)
+        self.assertEqual(value['readyStatRetry']['outcome'],'STAT_SUCCESS')
+        self.assertIsNone(value['firstFatalAdb']);self.assertEqual(sleeps,[.3])
+
+    def test_second_255_is_fatal_without_third_stat(self):
+        value,reads,_=self.run_ready_retry_driver(continuous=True)
+        self.assertFalse(value['readyObserved']);self.assertEqual(reads,2)
+        self.assertEqual(value['readyStatRetry']['outcome'],'RETRY_FAILED')
+        self.assertEqual(value['readyStatRetry']['retryAttempts'],1)
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_READY_STAT')
+        self.assertEqual(value['readyStatRetry']['retryObservation']['exitCode'],255)
+
+    def test_inactive_instrumentation_does_not_get_retry(self):
+        value,reads,sleeps=self.run_ready_retry_driver(initially_active=False)
+        self.assertEqual(reads,1);self.assertEqual(sleeps,[])
+        self.assertFalse(value['readyStatRetry']['budgetUsed']);self.assertFalse(value['readyObserved'])
+
+    def test_exit_before_retry_prevents_second_stat(self):
+        value,reads,_=self.run_ready_retry_driver(exit_during_wait=True)
+        self.assertEqual(reads,1);self.assertFalse(value['readyObserved'])
+        self.assertEqual(value['readyStatRetry']['retryAttempts'],0)
+        self.assertEqual(value['readyStatRetry']['outcome'],'REFUSED_INACTIVE')
+
+    def test_cat_255_after_retried_stat_stays_fatal(self):
+        value,reads,_=self.run_ready_retry_driver(cat_error=True)
+        self.assertEqual(reads,2);self.assertFalse(value['readyObserved'])
+        self.assertEqual(value['readyStatRetry']['outcome'],'STAT_SUCCESS')
+        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_READY_CAT')
+
+
 if __name__=='__main__':unittest.main()
