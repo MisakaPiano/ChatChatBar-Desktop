@@ -16,7 +16,8 @@ CLASS='com.example.chatbar.lanSync.LanV7ReverseSyntheticWriterTest'
 METHOD='appendOneMessageAndPngAfterProductionLanJoin'
 APP_LAB='files/v7-reverse-lab/'
 NATIVE_PHASES={'opt-in','startup','private-synthetic-offer','real-production-lan-join','initial-repository-receive',
-    'durable-imported-session','ordinary-repository-append','normal-runtime-reverse-receipt','activity-close'}
+    'durable-imported-session','ordinary-repository-append','normal-runtime-reverse-receipt','activity-close',
+    'isolated-reverse-route','isolated-route-close'}
 class Refused(Exception):pass
 def need(value,code):
     if not value:raise Refused(code)
@@ -30,9 +31,12 @@ def publish(path,value,replace=False):
 def safe_native_progress(raw):
     need(len(raw)<=4096,'NATIVE_PROGRESS_LIMIT');value=json.loads(raw)
     booleans={'initialSessionPresent','initialMessageExact','initialImageMatched','initialMessageCountCapped','durableSessionVerified','appendAttempted','appendCommitted',
-        'appendReturned','oracleWritten','groupBusy','groupPaused','groupErrorPresent','diagnosticWriteFailed'}
-    integers={'initialMessageCount','localReverseCount'}
-    need(set(value)==booleans|integers|{'kind','phase','sequence','firstFailurePhase','groupStage'},'NATIVE_PROGRESS_FIELDS')
+        'appendReturned','oracleWritten','groupBusy','groupPaused','groupErrorPresent','diagnosticWriteFailed',
+        'listenerObserved','relayBytesBothDirections','sourceSignedVersionObserved','sourceNativeFrontierObserved',
+        'sourceLocalReceiptObserved','publicationReadAvailable'}
+    integers={'initialMessageCount','localReverseCount','relayAccepted','relayConnected'}
+    need(set(value)==booleans|integers|{'kind','phase','sequence','firstFailurePhase','groupStage','isolatedRouteMode'},'NATIVE_PROGRESS_FIELDS')
+    need(value['isolatedRouteMode']=='ADB_FORWARD_TRANSPARENT_TLS','NATIVE_ROUTE_MODE')
     need(value['kind']=='CCB_V7_ANDROID_REVERSE_PROGRESS' and value['phase'] in NATIVE_PHASES and
          value['firstFailurePhase'] in NATIVE_PHASES|{None},'NATIVE_PROGRESS_PHASE')
     need(type(value['sequence']) is int and 0<=value['sequence']<=10000,'NATIVE_PROGRESS_SEQUENCE')
@@ -40,6 +44,18 @@ def safe_native_progress(raw):
     need(all(value[x] is None or type(value[x]) is bool for x in booleans) and
          all(value[x] is None or type(value[x]) is int and 0<=value[x]<=100 for x in integers),'NATIVE_PROGRESS_VALUES')
     return value
+
+def isolated_route(raw):
+    need(len(raw)<=2048,'PRIVATE_ROUTE_LIMIT');value=json.loads(raw)
+    need(set(value)=={'kind','sourceSha','group','device','relayPort'} and
+         value['kind']=='CCB_V7_ANDROID_ISOLATED_ROUTE' and value['sourceSha']==SOURCE and
+         re.fullmatch(r'[a-f0-9]{32}',value['group']) and re.fullmatch(r'[a-f0-9]{64}',value['device']) and
+         type(value['relayPort']) is int and 1024<=value['relayPort']<=65535,'PRIVATE_ROUTE_FIELDS')
+    return value
+
+def owned_forward(rows,serial,port,relay_port):
+    return sum(line.split()==[serial,'tcp:'+str(port),'tcp:'+str(relay_port)]
+               for line in rows.splitlines())==1
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for key in ('adb','control-tools','private-root','result'):p.add_argument('--'+key,type=Path,required=True)
@@ -49,7 +65,7 @@ def main():
         'ordinaryAndroidPasteUiProved':False,'readyObserved':False,'oracleCopied':False,
         'windowsReceived':False,'oneNativeMethodPassed':False,'privateProtocolCleaned':False,'humanAcceptance':False,
         'terminal':False,'nativeProgressAvailability':'UNREAD','lastNativeProgress':None,'checkpointWriteFailed':False}
-    proc=None;logs=[];prefix=[str(args.adb),'-s',args.serial];result_owned=False;last_progress=0
+    proc=None;logs=[];prefix=[str(args.adb),'-s',args.serial];result_owned=False;last_progress=0;forward=None
     def checkpoint():
         if result_owned:
             try:publish(args.result,r,replace=True)
@@ -60,7 +76,7 @@ def main():
         if missing and q.returncode==1 and not q.stdout and b'No such file or directory' in q.stderr:return None
         need(q.returncode==0 and not q.stderr.strip(),'ADB_COMMAND_FAILED');return q.stdout
     def private_read(name):
-        need(name in ('ready.json','oracle.json','progress.json'),'PRIVATE_READ_ENUM')
+        need(name in ('ready.json','oracle.json','progress.json','route.json'),'PRIVATE_READ_ENUM')
         if call('shell','-T','run-as',PACKAGE,'toybox','stat','-c','%s',APP_LAB+name,missing=True) is None:return None
         return call('shell','-T','run-as',PACKAGE,'cat',APP_LAB+name)
     def observe_progress(force=False):
@@ -101,7 +117,8 @@ def main():
         lab=args.private_root.resolve(strict=True)
         need(lab==root/'ccb-v7-live' and args.result.parent.is_dir() and not args.result.exists()
              and not args.result.resolve().is_relative_to(lab),'SEPARATE_NEW_SAFE_OUTPUT_REQUIRED')
-        need(not any((lab/x).exists() for x in ('live-offer.json','android-ready.json','reverse-expected.json','windows-reverse-received.json')),'NEW_PRIVATE_PROTOCOL_REQUIRED')
+        need(not any((lab/x).exists() for x in ('live-offer.json','android-ready.json','reverse-expected.json',
+             'windows-reverse-received.json','android-isolated-route.json')),'NEW_PRIVATE_PROTOCOL_REQUIRED')
         result_owned=True;r['status']='IN_PROGRESS';checkpoint()
         sys.path.insert(0,str(args.control_tools.resolve(strict=True)))
         import instrumentation_report
@@ -128,6 +145,16 @@ def main():
              isinstance(value['code'],str) and len(value['code'])<=16384 and re.fullmatch(r'CCB-GROUP-JOIN1:[A-Za-z0-9_-]+',value['code']) and
              re.fullmatch(r'[a-f0-9]{64}',value['imageSha256']),'SYNTHETIC_OFFER_INVALID')
         private_write('offer.json',offer);offer=value=None
+        r['phase']='ISOLATED_REVERSE_ROUTE';checkpoint()
+        route=isolated_route(wait(lambda:private_read('route.json'),180))
+        allocated=call('forward','--no-rebind','tcp:0','tcp:'+str(route['relayPort'])).strip()
+        need(re.fullmatch(rb'[0-9]{4,5}',allocated),'FORWARD_ALLOCATED_PORT')
+        forward=int(allocated);need(1024<=forward<=65535,'FORWARD_PORT_RANGE')
+        rows=call('forward','--list').decode('ascii')
+        need(owned_forward(rows,args.serial,forward,route['relayPort']),'OWNED_FORWARD_BINDING')
+        publish(lab/'android-isolated-route.json',{'kind':'CCB_V7_HOST_ISOLATED_ROUTE','sourceSha':SOURCE,
+                'group':route['group'],'device':route['device'],'forwardPort':forward})
+        r['isolatedForwardBound']=True;checkpoint()
         r['phase']='ORDINARY_REPOSITORY_REVERSE';checkpoint()
         raw=wait(lambda:private_read('oracle.json'),300);oracle=json.loads(raw)
         need(set(oracle)=={'kind','sourceSha','session','message','text','imageSha256','imageBytes','width','height'},'ORACLE_FIELDS')
@@ -162,9 +189,15 @@ def main():
                     if failures and all(x.decode('ascii') in NATIVE_PHASES for x in failures):r['instrumentationFailurePhase']=failures[0].decode('ascii')
             except Exception:pass
         observe_progress(force=True)
+        if forward is not None:
+            try:
+                need(owned_forward(call('forward','--list').decode('ascii'),args.serial,forward,route['relayPort']),
+                     'FORWARD_OWNERSHIP_CHANGED')
+                call('forward','--remove','tcp:'+str(forward));r['isolatedForwardRemoved']=True
+            except Exception:r['isolatedForwardRemoved']=False
         if proc is not None:
             try:
-                call('shell','-T','run-as',PACKAGE,'rm','-f',*(APP_LAB+x for x in ('ready.json','offer.json','oracle.json','windows-received.json','progress.json','progress.tmp')))
+                call('shell','-T','run-as',PACKAGE,'rm','-f',*(APP_LAB+x for x in ('ready.json','offer.json','oracle.json','windows-received.json','progress.json','progress.tmp','route.json')))
                 r['privateProtocolCleaned']=True
             except Exception:pass
     r['terminal']=True

@@ -47,7 +47,7 @@ jobs:
         with:
           packages: 'platform-tools emulator system-images;android-26;google_apis;x86_64 platforms;android-36 build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Run two exact native targets with bounded reverse diagnostics
+      - name: Run two exact native targets through fixed isolated reverse TLS route
         working-directory: reverse-control
         timeout-minutes: 65
         env:
@@ -58,7 +58,7 @@ jobs:
           --android-source ../reverse-android
           --windows-source ../reverse-windows
           --evidence evidence-reverse
-          --fixed-sha256 263c0cdc8d340942fab4540c3e61909d393a02072ecf8b0b8c03a0e3ba1e0957
+          --fixed-sha256 2b4edabb627a3e99f4a0793effb60961fe641feced44886d0bb12840b7c47e01
       - uses: actions/upload-artifact@v4
         if: always()
         with:

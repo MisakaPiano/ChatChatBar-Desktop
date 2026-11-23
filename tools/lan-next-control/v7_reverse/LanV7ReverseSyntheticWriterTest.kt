@@ -17,7 +17,13 @@ import java.nio.file.StandardOpenOption.WRITE
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.util.concurrent.atomic.AtomicBoolean
+import java.net.InetAddress
+import kotlinx.serialization.json.*
+import com.example.chatbar.domain.syncStore.SyncVersionState
+import com.example.chatbar.domain.syncStore.SyncAuthenticatedGroupObject
+import com.example.chatbar.domain.syncStore.SyncGroupObjectKind
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import org.junit.Test
 
@@ -49,8 +55,16 @@ class LanV7ReverseSyntheticWriterTest {
         var groupErrorPresent: Boolean? = null
         var diagnosticWriteFailed = false
         var progressJob: Job? = null
+        var publicationJob: Job? = null
+        var reverseRelay: V7ReverseTcpRelay? = null
+        var listenerObserved = false
+        var sourceSignedVersionObserved: Boolean? = null
+        var sourceNativeFrontierObserved: Boolean? = null
+        var sourceLocalReceiptObserved: Boolean? = null
+        var publicationReadAvailable: Boolean? = null
         var readGroup: (() -> LanSyncGroupPanelState)? = null
         val progressLock = Any()
+        val publicationLock = kotlinx.coroutines.sync.Mutex()
         fun report(force: Boolean = false) {
           synchronized(progressLock) {
             val root = progressRoot ?: return
@@ -74,6 +88,14 @@ class LanV7ReverseSyntheticWriterTest {
                 .put("oracleWritten", oracleWritten).put("groupStage", groupStage ?: JSONObject.NULL)
                 .put("groupBusy", groupBusy ?: JSONObject.NULL).put("groupPaused", groupPaused ?: JSONObject.NULL)
                 .put("groupErrorPresent", groupErrorPresent ?: JSONObject.NULL).put("diagnosticWriteFailed", diagnosticWriteFailed)
+                .put("listenerObserved", listenerObserved).put("isolatedRouteMode", "ADB_FORWARD_TRANSPARENT_TLS")
+                .put("relayAccepted", reverseRelay?.accepted?.get()?.coerceAtMost(100) ?: JSONObject.NULL)
+                .put("relayConnected", reverseRelay?.connected?.get()?.coerceAtMost(100) ?: JSONObject.NULL)
+                .put("relayBytesBothDirections", reverseRelay?.let { it.toTarget.get() > 0 && it.fromTarget.get() > 0 } ?: JSONObject.NULL)
+                .put("sourceSignedVersionObserved", sourceSignedVersionObserved ?: JSONObject.NULL)
+                .put("sourceNativeFrontierObserved", sourceNativeFrontierObserved ?: JSONObject.NULL)
+                .put("sourceLocalReceiptObserved", sourceLocalReceiptObserved ?: JSONObject.NULL)
+                .put("publicationReadAvailable", publicationReadAvailable ?: JSONObject.NULL)
             try {
                 val temporary = root.resolve("progress.tmp")
                 Files.write(temporary, value.toString().toByteArray(Charsets.UTF_8))
@@ -132,6 +154,22 @@ class LanV7ReverseSyntheticWriterTest {
                 coordinator.state.value.stage == LanSyncGroupPanelStage.READY && !coordinator.state.value.busy &&
                     !coordinator.state.value.paused && coordinator.state.value.devices.any { !it.thisDevice }
             }
+            phase = "isolated-reverse-route"; report(true)
+            // Read the already-attached owner; never construct another node or change its network.
+            val access = checkNotNull(LanSyncGroupCoordinator::class.java.getDeclaredField("access")
+                .apply { isAccessible = true }.get(coordinator) as LanSyncGroupRuntimeAccess?)
+            val nodeRoot = checkNotNull(LanSyncGroupNode::class.java.getDeclaredField("root")
+                .apply { isAccessible = true }.get(access.node) as java.nio.file.Path?)
+            val ordinaryPort = checkNotNull(LanSyncGroupCoordinator::class.java.getDeclaredField("port")
+                .apply { isAccessible = true }.get(coordinator) as Int?)
+            check(ordinaryPort in 1024..65535)
+            listenerObserved = true
+            val deviceAddress = LanSyncTls.parseAddress(LanSyncTls.localAddresses().single())
+            // ADB connects only to this test relay. The app's original listener still sees
+            // a real RFC1918 source, and still authenticates the original Windows certificate.
+            reverseRelay = V7ReverseTcpRelay(InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), deviceAddress, ordinaryPort, deviceAddress)
+            val route = JSONObject().put("kind", "CCB_V7_ANDROID_ISOLATED_ROUTE").put("sourceSha", SOURCE)
+                .put("group", access.trust.group.value).put("device", access.device).put("relayPort", reverseRelay!!.port)
             // This existing forward seed is pairing context, not another old86 acceptance.
             phase = "initial-repository-receive"; report(true)
             await(120_000) {
@@ -151,7 +189,12 @@ class LanV7ReverseSyntheticWriterTest {
                 report()
                 incoming != null
             }
+            check(initialMessageExact == true && initialImageMatched == true)
+            // Let the host replace only its hint responder after forward context is complete.
+            Files.write(lab.resolve("route.json"), route.toString().toByteArray(Charsets.UTF_8), CREATE_NEW, WRITE)
             check(app.chatRepository.getMessagesReadOnly(SESSION).none { it.id == MESSAGE })
+            val beforeVersions = coordinator.view.value?.reconciliation?.authenticatedVersions.orEmpty()
+                .mapNotNull { it.envelope.version?.reference() }.toSet()
             phase = "durable-imported-session"
             report(true)
             val durable = app.chatRepository.requireDurableSession(SESSION)
@@ -177,6 +220,41 @@ class LanV7ReverseSyntheticWriterTest {
             localReverseCount = app.chatRepository.getMessagesReadOnly(SESSION).count { it.id == MESSAGE }.coerceAtMost(100)
             report(true); check(localReverseCount == 1)
             check(Files.readAllBytes(image).contentEquals(png))
+            // Passive only: no inspect/prepare/commit/upload/recover calls. A committed repo
+            // row alone is not proof that normal automatic authoring/publication happened.
+            suspend fun samplePublication() = publicationLock.withLock {
+                    try {
+                        val view = coordinator.view.value
+                        val unit = "conversation/$SESSION"
+                        val candidate = if (view == null) null else view.reconciliation.authenticatedVersions.firstOrNull { row ->
+                            val version = row.envelope.version
+                            version != null && version.author == access.device && version.reference() !in beforeVersions &&
+                                version.changes[unit]?.content != null &&
+                                view.reconciliation.history?.state(version.id) == SyncVersionState.ADMITTED &&
+                                view.plan?.units?.get(unit)?.stage == LanSyncGroupNativeStage.UNCHANGED &&
+                                view.plan?.units?.get(unit)?.currentHash == version.changes[unit]?.valueHash &&
+                                view.plan?.before?.records?.any { record -> record.type == "chat_messages" &&
+                                    record.body["id"]?.jsonPrimitive?.contentOrNull == MESSAGE &&
+                                    record.body["content"]?.jsonPrimitive?.contentOrNull == TEXT } == true
+                        }
+                        sourceSignedVersionObserved = sourceSignedVersionObserved == true || candidate != null
+                        if (candidate != null) {
+                            val version = checkNotNull(candidate.envelope.version)
+                            sourceNativeFrontierObserved = sourceNativeFrontierObserved == true ||
+                                view!!.nativeState.units[unit]?.frontiers?.contains(version.reference()) == true
+                            val receipt = existingLocalReceipt(nodeRoot, access, candidate)
+                            sourceLocalReceiptObserved = sourceLocalReceiptObserved == true || receipt
+                        } else {
+                            if (sourceNativeFrontierObserved == null) sourceNativeFrontierObserved = false
+                            if (sourceLocalReceiptObserved == null) sourceLocalReceiptObserved = false
+                        }
+                        publicationReadAvailable = true
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { publicationReadAvailable = false }
+            }
+            publicationJob = launch(Dispatchers.IO) {
+                while (isActive) { samplePublication(); report(); delay(1_000) }
+            }
             val oracle = JSONObject().put("kind", "CCB_V7_ANDROID_REVERSE_ORACLE").put("sourceSha", SOURCE)
                 .put("session", SESSION).put("message", MESSAGE).put("text", TEXT)
                 .put("imageSha256", lanSyncHash(png)).put("imageBytes", png.size).put("width", 8).put("height", 8)
@@ -190,12 +268,15 @@ class LanV7ReverseSyntheticWriterTest {
             val response = JSONObject(Files.readAllBytes(ack).toString(Charsets.UTF_8))
             check(response.keys().asSequence().toSet() == setOf("kind", "received"))
             check(response.getString("kind") == "CCB_V7_WINDOWS_REVERSE_RECEIVED" && response.getBoolean("received"))
+            samplePublication() // A final passive sample avoids accepting or failing on a stale one-second projection.
+            check(sourceSignedVersionObserved == true && sourceNativeFrontierObserved == true && sourceLocalReceiptObserved == true)
             check(app.chatRepository.getMessagesReadOnly(SESSION).count { it.id == MESSAGE && it.content == TEXT } == 1)
             check(Files.readAllBytes(image).contentEquals(png))
         } catch (_: Throwable) { if (failed == null) failed = phase }
         finally {
             report(true)
-            withContext(NonCancellable) { progressJob?.cancelAndJoin() }
+            withContext(NonCancellable) { publicationJob?.cancelAndJoin(); progressJob?.cancelAndJoin() }
+            try { reverseRelay?.close() } catch (_: Throwable) { if (failed == null) failed = "isolated-route-close" }
             try { page?.close() } catch (_: Throwable) { if (failed == null) failed = "activity-close" }
             report(true)
         }
@@ -205,11 +286,139 @@ class LanV7ReverseSyntheticWriterTest {
     private suspend fun await(timeout: Long, ready: suspend () -> Boolean) = withTimeout(timeout) {
         while (!ready()) delay(100)
     }
+    /** Original durable plan/receipt only; no journal getter, lock, recovery or file creation. */
+    private fun existingLocalReceipt(nodeRoot: java.nio.file.Path, access: LanSyncGroupRuntimeAccess,
+        candidate: SyncAuthenticatedGroupObject): Boolean {
+        val directory = nodeRoot.resolve("source/publications")
+        if (!Files.exists(directory, NOFOLLOW_LINKS)) return false
+        check(nodeRoot.toRealPath() == nodeRoot && directory.toRealPath() == directory)
+        check(Files.isDirectory(directory, NOFOLLOW_LINKS))
+        fun read(path: java.nio.file.Path, maximum: Int): ByteArray {
+            check(path.parent == directory && Files.isRegularFile(path, NOFOLLOW_LINKS) && path.toRealPath() == path)
+            return Files.newInputStream(path, NOFOLLOW_LINKS).use { input ->
+                val output = java.io.ByteArrayOutputStream(); val buffer = ByteArray(8_192)
+                while (true) {
+                    val size = input.read(buffer); if (size < 0) break
+                    check(output.size() <= maximum - size); output.write(buffer, 0, size)
+                }
+                output.toByteArray()
+            }
+        }
+        val paths = Files.newDirectoryStream(directory, "publication-*.json").use { rows ->
+            rows.filter { it.fileName.toString().matches(Regex("publication-[a-f0-9]{32}\\.json")) }.also { check(it.size <= 64) }
+        }
+        return paths.any { path ->
+            val raw = read(path, 1_048_576)
+            val plan = Json.decodeFromString(LanSyncGroupPublishPlan.serializer(), raw.toString(Charsets.UTF_8))
+            if (plan.kind != SyncGroupObjectKind.VERSION || plan.reference != candidate.envelope.version?.reference() ||
+                plan.group != access.trust.group || plan.epoch != candidate.context.epoch || plan.keyCommitment != candidate.keyCommitment ||
+                plan.metadata.key != candidate.context.key || plan.metadata.descriptor != candidate.metadata.descriptor) false
+            else {
+                val target = access.localTarget
+                val receiptPath = directory.resolve("publication-receipt-${plan.metadata.operation.value}-${target.kind.name.lowercase(java.util.Locale.ROOT)}-${target.id.value}.json")
+                if (!Files.exists(receiptPath, NOFOLLOW_LINKS)) false else {
+                    val receipt = Json.decodeFromString(LanSyncGroupPublishReceipt.serializer(), read(receiptPath, 65_536).toString(Charsets.UTF_8))
+                    receipt.target == target && receipt.metadata == candidate.metadata.descriptor && receipt.planHash == lanSyncHash(raw) &&
+                        receipt.resourceCount == plan.blobs.size.toLong() && plan.keyDeliveries.isEmpty() && plan.revocationNotices.isEmpty() &&
+                        receipt.recipientCount == 0L && receipt.keyDeliveryCount == 0L && receipt.revocationNoticeCount == 0L
+                }
+            }
+        }
+    }
     companion object {
         private const val SOURCE = "40981ae4045114d1d2a076a82b02b7c7f5275cc7"
         private const val PACKAGE = "com.example.chatbar.lansyncnext"
         private const val SESSION = "ccb-v7-lab-session"
         private const val MESSAGE = "ccb-v7-reverse-message"
         private const val TEXT = "CCB-V7-synthetic-android-reverse"
+    }
+}
+
+
+/** Test-only byte relay; it never terminates TLS or reads application protocol fields. */
+private class V7ReverseTcpRelay(bind: java.net.InetAddress, private val target: java.net.InetAddress,
+    private val targetPort: Int, private val source: java.net.InetAddress? = null) : AutoCloseable {
+    private val server = java.net.ServerSocket()
+    private val lock = Any()
+    private val sockets = mutableSetOf<java.net.Socket>()
+    private val workers = mutableSetOf<Thread>()
+    private val slots = java.util.concurrent.Semaphore(4)
+    @Volatile private var closed = false
+    val accepted = java.util.concurrent.atomic.AtomicInteger()
+    val connected = java.util.concurrent.atomic.AtomicInteger()
+    val toTarget = java.util.concurrent.atomic.AtomicLong()
+    val fromTarget = java.util.concurrent.atomic.AtomicLong()
+    val failures = java.util.concurrent.atomic.AtomicInteger()
+    val port: Int get() = server.localPort
+    private val listener: Thread
+    init {
+        check(targetPort in 1024..65535)
+        try { server.bind(java.net.InetSocketAddress(bind, 0), 4); check(server.localPort in 1024..65535) }
+        catch (failure: Throwable) { server.close(); throw failure }
+        listener = Thread({
+            while (!closed) try {
+                val incoming = server.accept()
+                // The synthetic route is same-host only; unrelated peers never enter
+                // counters, worker slots, or the original authenticated Android listener.
+                if (incoming.inetAddress != bind) { incoming.close(); continue }
+                if (!slots.tryAcquire()) { incoming.close(); continue }
+                accepted.incrementAndGet()
+                synchronized(lock) { if (closed) { incoming.close(); slots.release() }
+                    else {
+                        sockets += incoming
+                        val worker = Thread({ transfer(incoming) }, "ccb-test-relay").apply { isDaemon = true }
+                        workers += worker; worker.start()
+                    }
+                }
+            } catch (_: Exception) { if (!closed) failures.incrementAndGet() }
+        }, "ccb-test-relay-listen").apply { isDaemon = true; start() }
+    }
+    private fun pump(input: java.net.Socket, output: java.net.Socket, count: java.util.concurrent.atomic.AtomicLong) {
+        val buffer = ByteArray(16 * 1024)
+        var total = 0L
+        while (!closed) {
+            val size = input.getInputStream().read(buffer)
+            if (size < 0) { runCatching { output.shutdownOutput() }; return }
+            total += size
+            check(total <= 32L * 1024 * 1024)
+            output.getOutputStream().write(buffer, 0, size); output.getOutputStream().flush()
+            count.addAndGet(size.toLong())
+        }
+    }
+    private fun transfer(incoming: java.net.Socket) {
+        val outgoing = java.net.Socket()
+        var reverse: Thread? = null
+        try {
+            synchronized(lock) { check(!closed); sockets += outgoing }
+            incoming.soTimeout = 15_000; outgoing.soTimeout = 15_000
+            source?.let { outgoing.bind(java.net.InetSocketAddress(it, 0)) }
+            outgoing.connect(java.net.InetSocketAddress(target, targetPort), 5_000)
+            connected.incrementAndGet()
+            val returnWorker = Thread({
+                try { pump(outgoing, incoming, fromTarget) }
+                catch (_: Exception) { if (!closed) failures.incrementAndGet() }
+                finally { runCatching { incoming.close() }; runCatching { outgoing.close() }
+                    synchronized(lock) { workers -= Thread.currentThread() } }
+            }, "ccb-test-relay-return").apply { isDaemon = true }
+            reverse = returnWorker
+            synchronized(lock) { workers += returnWorker }; returnWorker.start()
+            pump(incoming, outgoing, toTarget)
+            reverse.join(1_000)
+        } catch (_: Exception) { if (!closed) failures.incrementAndGet() }
+        finally {
+            runCatching { incoming.close() }; runCatching { outgoing.close() }
+            reverse?.join(1_000)
+            synchronized(lock) { sockets -= incoming; sockets -= outgoing; workers -= Thread.currentThread() }
+            slots.release()
+        }
+    }
+    override fun close() {
+        closed = true; server.close()
+        synchronized(lock) { sockets.toList() }.forEach { runCatching { it.close() } }
+        val deadline = System.nanoTime() + 3_000_000_000L
+        (listOf(listener) + synchronized(lock) { workers.toList() }).forEach {
+            if (it !== Thread.currentThread()) it.join(((deadline - System.nanoTime()) / 1_000_000L).coerceAtLeast(1))
+        }
+        check(!listener.isAlive && synchronized(lock) { workers.none { it.isAlive } })
     }
 }

@@ -51,6 +51,9 @@ class DesktopV7ReverseSyntheticHostDraftTest {
         var reverseStep = "NOT_REACHED"
         val reverseObservations = mutableListOf<JsonObject>()
         val owned = mutableListOf<Path>()
+        var reverseRelay: V7ReverseTcpRelay? = null
+        var reverseHint: V7ReverseFixedHint? = null
+        var isolatedRouteInstalled = false
         try {
             val safe = guardedRoots(); roots = safe
             val directory = safe.runner.resolve("ccb-v7-live")
@@ -168,6 +171,35 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                     check(access.ledger().current().members[confirmation.fingerprint]?.active == true)
                     peerApproved = true
 
+                    phase = "isolated-reverse-route"
+                    val routePath = directory.resolve("android-isolated-route.json")
+                    await(90_000) { Files.isRegularFile(routePath, NOFOLLOW_LINKS) }
+                    check(Files.size(routePath) in 1L..2_048L)
+                    val route = Json.parseToJsonElement(Files.readString(routePath, Charsets.UTF_8)).jsonObject
+                    check(route.keys == setOf("kind", "sourceSha", "group", "device", "forwardPort"))
+                    check(route["kind"]?.jsonPrimitive?.contentOrNull == "CCB_V7_HOST_ISOLATED_ROUTE")
+                    check(route["sourceSha"]?.jsonPrimitive?.contentOrNull == SOURCE)
+                    check(route["group"]?.jsonPrimitive?.contentOrNull == access.trust.group.value)
+                    check(route["device"]?.jsonPrimitive?.contentOrNull == confirmation.fingerprint)
+                    val forwardPort = checkNotNull(route["forwardPort"]?.jsonPrimitive?.intOrNull)
+                    check(forwardPort in 1024..65535)
+                    val hostAddress = LanSyncTls.parseAddress(invitation.host)
+                    reverseRelay = V7ReverseTcpRelay(hostAddress, java.net.InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1)), forwardPort)
+                    // Test address hints only. Leave transport, Local, reader, TLS and all
+                    // automatic discover/prefetch/native workers untouched. Avoid two Windows
+                    // SO_REUSEADDR responders competing for the same UDP39238 traffic.
+                    val discoveryField = LanSyncGroupCoordinator::class.java.getDeclaredField("discovery").apply { isAccessible = true }
+                    val lifecycle = LanSyncGroupCoordinator::class.java.getDeclaredField("lifecycle").apply { isAccessible = true }.get(coordinator)
+                    val replacement = LanSyncGroupDiscovery(access, LanSyncNetwork.Local) { _, _ -> }
+                    val old = synchronized(lifecycle) {
+                        val previous = discoveryField.get(coordinator) as LanSyncGroupDiscovery?
+                        check(previous != null); discoveryField.set(coordinator, replacement); previous
+                    }
+                    old.close()
+                    reverseHint = V7ReverseFixedHint(access.trust.group.value, confirmation.fingerprint,
+                        reverseRelay!!.port, hostAddress)
+                    isolatedRouteInstalled = true
+
                     phase = "ordinary-reverse-repository-message-and-png"
                     reverseStep = "WAIT_ORACLE_AND_MESSAGE"
                     val oraclePath = directory.resolve("reverse-expected.json")
@@ -201,6 +233,10 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                             put("groupBusy", coordinator.state.value.busy); put("groupPaused", coordinator.state.value.paused)
                             put("groupErrorPresent", coordinator.state.value.error != null)
                             put("nearbyLastSuccessPresent", coordinator.state.value.nearby.lastSuccessAt != null)
+                            put("routeHintReplies", reverseHint!!.replies.get().coerceAtMost(100))
+                            put("routeRelayAccepted", reverseRelay!!.accepted.get().coerceAtMost(100))
+                            put("routeRelayConnected", reverseRelay!!.connected.get().coerceAtMost(100))
+                            put("routeRelayBytesBothDirections", reverseRelay!!.toTarget.get() > 0 && reverseRelay!!.fromTarget.get() > 0)
                             put("waitState", when {
                                 oraclePresent && ordinaryCount > 0 -> "BOTH_PRESENT"
                                 oraclePresent -> "ORACLE_ONLY"
@@ -265,6 +301,10 @@ class DesktopV7ReverseSyntheticHostDraftTest {
             }
         } catch (_: Throwable) { if (failedPhase == null) failedPhase = phase }
         finally {
+            try { reverseHint?.close() }
+                catch (_: Throwable) { if (failedPhase == null) failedPhase = "isolated-route-close" }
+            try { reverseRelay?.close() }
+                catch (_: Throwable) { if (failedPhase == null) failedPhase = "isolated-route-close" }
             // The live invitation is private coordination, NEVER an artifact. Do not delete controller readbacks.
             if (offerOwned) try { Files.deleteIfExists(checkNotNull(live).resolve("live-offer.json")) }
                 catch (_: Throwable) { if (failedPhase == null) failedPhase = "private-offer-cleanup" }
@@ -280,6 +320,7 @@ class DesktopV7ReverseSyntheticHostDraftTest {
                 put("session", SESSION); put("message", REVERSE_MESSAGE)
                 imageHash?.let { put("forwardContextImageSha256", it) }
                 put("productionNetworkLocal", true); put("udpDiscoveryProved", false)
+                put("isolatedRouteMode", "ADB_FORWARD_TRANSPARENT_TLS"); put("isolatedRouteInstalled", isolatedRouteInstalled)
                 put("packagedMainTested", false); put("humanAcceptance", false)
             }) } catch (_: Throwable) { if (failedPhase == null) failedPhase = "safe-result-write" } }
         }
@@ -339,4 +380,126 @@ class DesktopV7ReverseSyntheticHostDraftTest {
         private const val MESSAGE = "ccb-v7-lab-message"
         private const val TEXT = "CCB-V7-synthetic-message"
     }
+}
+
+
+/** Test-only byte relay; it never terminates TLS or reads application protocol fields. */
+private class V7ReverseTcpRelay(bind: java.net.InetAddress, private val target: java.net.InetAddress,
+    private val targetPort: Int, private val source: java.net.InetAddress? = null) : AutoCloseable {
+    private val server = java.net.ServerSocket()
+    private val lock = Any()
+    private val sockets = mutableSetOf<java.net.Socket>()
+    private val workers = mutableSetOf<Thread>()
+    private val slots = java.util.concurrent.Semaphore(4)
+    @Volatile private var closed = false
+    val accepted = java.util.concurrent.atomic.AtomicInteger()
+    val connected = java.util.concurrent.atomic.AtomicInteger()
+    val toTarget = java.util.concurrent.atomic.AtomicLong()
+    val fromTarget = java.util.concurrent.atomic.AtomicLong()
+    val failures = java.util.concurrent.atomic.AtomicInteger()
+    val port: Int get() = server.localPort
+    private val listener: Thread
+    init {
+        check(targetPort in 1024..65535)
+        try { server.bind(java.net.InetSocketAddress(bind, 0), 4); check(server.localPort in 1024..65535) }
+        catch (failure: Throwable) { server.close(); throw failure }
+        listener = Thread({
+            while (!closed) try {
+                val incoming = server.accept()
+                // The synthetic route is same-host only; unrelated peers never enter
+                // counters, worker slots, or the original authenticated Android listener.
+                if (incoming.inetAddress != bind) { incoming.close(); continue }
+                if (!slots.tryAcquire()) { incoming.close(); continue }
+                accepted.incrementAndGet()
+                synchronized(lock) { if (closed) { incoming.close(); slots.release() }
+                    else {
+                        sockets += incoming
+                        val worker = Thread({ transfer(incoming) }, "ccb-test-relay").apply { isDaemon = true }
+                        workers += worker; worker.start()
+                    }
+                }
+            } catch (_: Exception) { if (!closed) failures.incrementAndGet() }
+        }, "ccb-test-relay-listen").apply { isDaemon = true; start() }
+    }
+    private fun pump(input: java.net.Socket, output: java.net.Socket, count: java.util.concurrent.atomic.AtomicLong) {
+        val buffer = ByteArray(16 * 1024)
+        var total = 0L
+        while (!closed) {
+            val size = input.getInputStream().read(buffer)
+            if (size < 0) { runCatching { output.shutdownOutput() }; return }
+            total += size
+            check(total <= 32L * 1024 * 1024)
+            output.getOutputStream().write(buffer, 0, size); output.getOutputStream().flush()
+            count.addAndGet(size.toLong())
+        }
+    }
+    private fun transfer(incoming: java.net.Socket) {
+        val outgoing = java.net.Socket()
+        var reverse: Thread? = null
+        try {
+            synchronized(lock) { check(!closed); sockets += outgoing }
+            incoming.soTimeout = 15_000; outgoing.soTimeout = 15_000
+            source?.let { outgoing.bind(java.net.InetSocketAddress(it, 0)) }
+            outgoing.connect(java.net.InetSocketAddress(target, targetPort), 5_000)
+            connected.incrementAndGet()
+            val returnWorker = Thread({
+                try { pump(outgoing, incoming, fromTarget) }
+                catch (_: Exception) { if (!closed) failures.incrementAndGet() }
+                finally { runCatching { incoming.close() }; runCatching { outgoing.close() }
+                    synchronized(lock) { workers -= Thread.currentThread() } }
+            }, "ccb-test-relay-return").apply { isDaemon = true }
+            reverse = returnWorker
+            synchronized(lock) { workers += returnWorker }; returnWorker.start()
+            pump(incoming, outgoing, toTarget)
+            reverse.join(1_000)
+        } catch (_: Exception) { if (!closed) failures.incrementAndGet() }
+        finally {
+            runCatching { incoming.close() }; runCatching { outgoing.close() }
+            reverse?.join(1_000)
+            synchronized(lock) { sockets -= incoming; sockets -= outgoing; workers -= Thread.currentThread() }
+            slots.release()
+        }
+    }
+    override fun close() {
+        closed = true; server.close()
+        synchronized(lock) { sockets.toList() }.forEach { runCatching { it.close() } }
+        val deadline = System.nanoTime() + 3_000_000_000L
+        (listOf(listener) + synchronized(lock) { workers.toList() }).forEach {
+            if (it !== Thread.currentThread()) it.join(((deadline - System.nanoTime()) / 1_000_000L).coerceAtLeast(1))
+        }
+        check(!listener.isAlive && synchronized(lock) { workers.none { it.isAlive } })
+    }
+}
+
+
+/** Exactly one synthetic target's bounded address hint, never membership authority. */
+private class V7ReverseFixedHint(private val group: String, private val device: String,
+    private val port: Int, private val host: java.net.InetAddress) : AutoCloseable {
+    private val socket = java.net.DatagramSocket(null)
+    @Volatile private var closed = false
+    val replies = java.util.concurrent.atomic.AtomicInteger()
+    private val thread: Thread
+    init {
+        check(group.matches(Regex("[a-f0-9]{32}")) && device.matches(Regex("[a-f0-9]{64}")))
+        check(port in 1024..65535 && host.isSiteLocalAddress && !host.isLoopbackAddress)
+        socket.reuseAddress = false
+        try { socket.bind(java.net.InetSocketAddress(LanSyncGroupDiscovery.PORT)); socket.soTimeout = 500 }
+        catch (failure: Throwable) { socket.close(); throw failure }
+        thread = Thread({
+            while (!closed) try {
+                val packet = java.net.DatagramPacket(ByteArray(385), 385)
+                try { socket.receive(packet) } catch (_: java.net.SocketTimeoutException) { continue }
+                if (packet.address != host || packet.length !in 1..384) continue
+                val bytes = packet.data.copyOfRange(packet.offset, packet.offset + packet.length)
+                if (bytes.any { it.toInt() !in 32..126 }) continue
+                val fields = bytes.toString(Charsets.US_ASCII).split(' ')
+                if (fields.size != 4 || fields[0] != "CCB-GROUP-FIND-1" || fields[1] != group ||
+                    fields[2] != device || !fields[3].matches(Regex("[a-f0-9]{64}"))) continue
+                val response = "CCB-GROUP-HERE-1 $group $device $port ${fields[3]}".toByteArray(Charsets.US_ASCII)
+                socket.send(java.net.DatagramPacket(response, response.size, packet.address, packet.port))
+                replies.incrementAndGet()
+            } catch (_: Exception) { if (!closed) break }
+        }, "ccb-test-fixed-hint").apply { isDaemon = true; start() }
+    }
+    override fun close() { closed = true; socket.close(); thread.join(2_000); check(!thread.isAlive) }
 }
