@@ -28,7 +28,7 @@ jobs:
         run: >-
           ./gradlew.bat :desktopApp:test
           --tests '*DesktopLanSyncReloadRecoveryTest.committedSignedReceiveRefreshesTheOpenDesktopChatAndPreservesDraft'
-          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g
+          -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 '-Pkotlin.daemon.jvmargs=-Xmx4g'
           --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
