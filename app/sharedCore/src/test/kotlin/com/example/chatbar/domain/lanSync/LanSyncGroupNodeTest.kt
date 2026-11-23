@@ -934,7 +934,9 @@ class LanSyncGroupNodeTest {
         val preview = node.prepareRecovery(old.entry.request.sourceCheckpoint, unit)
         val failure = assertFailsWith<IllegalStateException> { node.applyRecovery(preview) }
         assertEquals("SYNC_GROUP_NATIVE_RELOAD_PENDING", failure.message)
-        assertEquals("SYNTHETIC_RESTORE_FIRST_RELOAD_FAILED", failure.cause?.message)
+        assertTrue(generateSequence<Throwable>(failure) { it.cause }.take(8).any {
+            it is IOException && it.message == "SYNTHETIC_RESTORE_FIRST_RELOAD_FAILED"
+        })
         assertTrue(end.workspace.verifiedApplied(preview.id))
         val beforeRetry = retainedFiles(end.data)
         assertTrue(end.workspace.completedRecoveries(g.identities[0].fingerprint).single().reloadPending)

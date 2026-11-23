@@ -117,7 +117,7 @@ class LanSyncGroupNativeApplyOwnerTest {
         val left = f.source.sign(parent.copy(id = SyncStoreId.random(), parent = parent.reference(), sequence = parent.sequence + 1))
         val right = f.source.sign(left.copy(id = SyncStoreId.random()))
         assertFailsWith<IllegalArgumentException> { f.custody().update(listOf(left, right)) }
-        assertEquals(setOf(left.reference(), right.reference()), f.custody().ledger().admittedTips())
+        assertEquals(setOf(left.reference(), right.reference()), f.custody().recoveryGraph().admittedTips())
         val marker = n.control.resolve("receipt-0000000000000000002.protected")
         assertFalse(Files.exists(marker))
 
@@ -126,7 +126,7 @@ class LanSyncGroupNativeApplyOwnerTest {
         assertEquals(setOf(version.reference()), n.owner().recoveryFrontiers())
         assertContentEquals(originalReceipt, Files.readAllBytes(marker))
         assertEquals("已应用后本机再次编辑", n.readCard("a").name)
-        assertEquals(setOf(left.reference(), right.reference()), f.custody().ledger().admittedTips())
+        assertEquals(setOf(left.reference(), right.reference()), f.custody().recoveryGraph().admittedTips())
         assertNull(n.owner().state().pendingTransaction)
     }
 

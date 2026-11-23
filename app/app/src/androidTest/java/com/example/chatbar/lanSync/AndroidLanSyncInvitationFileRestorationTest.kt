@@ -46,6 +46,7 @@ import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -189,7 +190,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             fun joiner() = LanSyncGroupJoining(joining, workspace, platform, identity,
                 { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> })
             return LanSyncGroupCoordinator(hasExistingEvidence = { Files.exists(profile.resolve("profile.protected")) ||
-                Files.exists(joining.resolve("profile.protected")) }, enrollment = { founder }, joining = ::joiner,
+                Files.exists(joining.resolve("joining/profile.protected")) }, enrollment = { founder }, joining = ::joiner,
                 network = network, deviceName = "Synthetic encrypted file picker",
                 fileRecoveryFactory = { ready ->
                     LanSyncGroupFileRecoveryOwner({ Files.createDirectories(path.resolve("recovery")) }, ::joiner,
@@ -199,11 +200,27 @@ class AndroidLanSyncInvitationFileRestorationTest {
         val source = coordinator(Files.createDirectory(root.resolve("source")))
         val receiver = coordinator(Files.createDirectory(root.resolve("receiver")))
         try {
+            fun diagnostics(): String {
+                val group = source.state.value
+                val exported = source.fileExport?.state?.value
+                val recovered = receiver.fileRecovery?.state?.value
+                return "source=${group.stage} busy=${group.busy} issue=${group.error}; " +
+                    "export visible=${exported?.visible} busy=${exported?.busy} prepared=${exported?.preparedBinding != null} " +
+                    "written=${exported?.writeCompleted} readback=${exported?.readbackVerified} issue=${exported?.error}; " +
+                    "recovery visible=${recovered?.visible} busy=${recovered?.busy} review=${recovered?.review != null} issue=${recovered?.error}"
+            }
+            suspend fun reach(stage: String, condition: () -> Boolean) {
+                val reached = withTimeoutOrNull(30_000) {
+                    while (!condition()) delay(25)
+                    true
+                }
+                check(reached == true) { "$stage failed: ${diagnostics()}" }
+            }
             source.createGroup()
-            await { !source.state.value.busy && source.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
+            reach("create group") { !source.state.value.busy && source.state.value.stage == LanSyncGroupPanelStage.NEEDS_RECOVERY_SAVE }
             val code = requireNotNull(source.state.value.recoveryCode)
             source.recoverySaved(requireNotNull(source.state.value.setupBinding))
-            await { !source.state.value.busy && source.state.value.stage == LanSyncGroupPanelStage.READY }
+            reach("activate founder") { !source.state.value.busy && source.state.value.stage == LanSyncGroupPanelStage.READY }
             val exporter = requireNotNull(source.fileExport)
             val recovery = requireNotNull(receiver.fileRecovery)
             val picker = Picker("ChatBar.cbgroup", allowInput = true)
@@ -223,13 +240,13 @@ class AndroidLanSyncInvitationFileRestorationTest {
             }
             compose.onNodeWithText("导出加密同步文件").performClick()
             compose.onNodeWithText("准备加密同步文件").performScrollTo().performClick()
-            await { !exporter.state.value.busy && exporter.state.value.preparedBinding != null }
+            reach("prepare encrypted file") { !exporter.state.value.busy && exporter.state.value.preparedBinding != null }
             val target = root.resolve("verified.cbgroup")
             compose.onNodeWithText("选择保存位置并写出").performScrollTo().performClick()
             restoration.emulateSavedInstanceStateRestore()
             source.lockManagementOnVisibilityLoss()
             compose.runOnIdle { picker.deliver(Uri.fromFile(target.toFile())) }
-            await { !exporter.state.value.busy && exporter.state.value.readbackVerified }
+            reach("verify restored output picker write and readback") { !exporter.state.value.busy && exporter.state.value.readbackVerified }
             val bytes = Files.readAllBytes(target)
             assertTrue(bytes.isNotEmpty())
 
@@ -252,7 +269,7 @@ class AndroidLanSyncInvitationFileRestorationTest {
             assertNull(recovery.state.value.review)
             compose.onNode(hasSetTextAction()).performTextInput(code)
             compose.onNodeWithText("读取并核对设备组").performScrollTo().performClick()
-            await { !recovery.state.value.busy && recovery.state.value.review != null }
+            reach("review opened file with fresh recovery code") { !recovery.state.value.busy && recovery.state.value.review != null }
             assertNull(recovery.state.value.error)
             assertTrue(bytes.contentEquals(Files.readAllBytes(target)))
         } finally {
