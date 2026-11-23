@@ -85,6 +85,20 @@ class LanSyncGroupDependenciesTest {
         assertNull(LanSyncGroupDisplay.versionDependencyNotice(frozenReady, reference))
         assertEquals("等待正文或附件", LanSyncGroupDisplay.nativeStageLabel(frozenWaiting))
         val available = requireNotNull(ready.available)
+        // Test the incoming-cache diagnosis while this receiver has no local copy of the same image.
+        val cachedImage = available.resources.getValue(image.sha256)
+        try {
+            Files.write(cachedImage, byteArrayOf(9, 8, 7))
+            val damaged = f.service().inspect(reconciled, metadata, unit)
+            assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, damaged.stage)
+            assertNull(damaged.available)
+            assertNull(damaged.rejectedPart)
+            val unavailableRow = f.plan(reconciled, metadata, damaged).units.getValue(unit)
+            assertEquals("此版本未能通过资料检查", LanSyncGroupDisplay.nativeStageLabel(unavailableRow))
+            assertContains(requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(unavailableRow, reference)), "本机存储")
+        } finally {
+            Files.write(cachedImage, LanSyncPreviewSample.image())
+        }
         val snapshot = LanSyncSnapshot(deviceId = source.owner.fingerprint, records = available.decoded.payload.records,
             resources = available.decoded.payload.resources, coveredTypes = available.decoded.payload.coveredTypes)
         f.workspace.capture(source.owner.fingerprint).use { current -> f.workspace.apply(LanSyncPlan(UUID.randomUUID().toString(), snapshot, emptyMap()),
@@ -98,13 +112,6 @@ class LanSyncGroupDependenciesTest {
                 throw IOException("SYNTHETIC_CACHED_CONTENT_MUST_NOT_DOWNLOAD")
         }
         assertEquals(LanSyncGroupDependencyStage.UNIT_CONTENT_AVAILABLE, f.service(unavailable).inspect(reconciled, metadata, unit).stage)
-        Files.write(available.resources.getValue(image.sha256), byteArrayOf(9, 8, 7))
-        val damaged = f.service().inspect(reconciled, metadata, unit)
-        assertEquals(LanSyncGroupDependencyStage.INVALID_CONTENT, damaged.stage); assertNull(damaged.available)
-        assertNull(damaged.rejectedPart)
-        val unavailableRow = f.plan(reconciled, metadata, damaged).units.getValue(unit)
-        assertEquals("此版本未能通过资料检查", LanSyncGroupDisplay.nativeStageLabel(unavailableRow))
-        assertContains(requireNotNull(LanSyncGroupDisplay.versionDependencyNotice(unavailableRow, reference)), "本机存储")
     }
 
     @Test fun authenticatedInvalidAttachmentKeepsItsFrozenReasonAndCanBeLeftForLater() = withRoot { root ->
