@@ -453,7 +453,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         val setup = owner.panelSetup()
         val own = setup.profile
         if (own != null) {
-            if (own.stage == LanSyncGroupEnrollmentStage.READY) attach(requireNotNull(owner.runtimeAccess()))
+            if (own.stage == LanSyncGroupEnrollmentStage.READY) attach(requireNotNull(owner.runtimeAccess()), reopenRegistered = true)
             else {
                 synchronized(lifecycle) {
                     val prepared = draft?.takeIf { it.profile == own && it.session.isUnlocked }
@@ -477,7 +477,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val joined = member().profile()
             val recovery = joined != null && !joined.ledgerConflict && member().recoveryAnchor() != null
             mutableState.update { it.copy(canResumeExternalRecovery = recovery) }
-            if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()))
+            if (joined?.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(member().runtimeAccess()), reopenRegistered = true)
             else if (joined != null) {
                 mutableState.update { it.copy(stage = LanSyncGroupPanelStage.JOINING, recoveryJoining = recovery,
                     fileRecoveryJoinScope = joined.localReplica.id.value.takeUnless { joined.membershipRevoked },
@@ -1472,7 +1472,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             synchronized(reviewGeneration) { if (generation == reviewGeneration.get()) mutableActionReview.value = prepared }
         }
     }
-    private suspend fun attach(opened: LanSyncGroupRuntimeAccess, checkCloud: Boolean = false) {
+    private suspend fun attach(opened: LanSyncGroupRuntimeAccess, checkCloud: Boolean = false, reopenRegistered: Boolean = false) {
         val newlyAttached = synchronized(lifecycle) {
             check(!closed) { "SYNC_GROUP_COORDINATOR_CLOSED" }
             if (access != null) false else {
@@ -1495,11 +1495,15 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             managementRecoveryAvailable = !requireNotNull(access).localManagementAvailable,
             paused = paused, status = if (paused) "设备组同步尚未恢复，原件与待传队列已保留" else "设备组已就绪，应用正在检查同步") }
         val localActive = refreshDevices()
-        if (localActive && (newlyAttached || checkCloud) && !startLoop()) synchronized(lifecycle) {
-            // The join ticker or manual check can be waiting here until the local check finishes.
-            if (!closed && !paused && access === opened && state.value.membershipConflict == null) {
-                if (newlyAttached && nearbyWorker?.isActive == true) nearbyWake.trySend(Unit)
-                if (checkCloud) requestCloudCheck()
+        if (localActive && (newlyAttached || checkCloud)) {
+            // Cold reopening needs its own workers. First enrollment still completes its initial local check.
+            val started = (reopenRegistered || checkCloud) && startLoop()
+            if (!started) synchronized(lifecycle) {
+                if (!closed && !paused && access === opened && state.value.membershipConflict == null) {
+                    // An existing join ticker may be waiting for this very attachment to return.
+                    if (newlyAttached && nearbyWorker?.isActive == true) nearbyWake.trySend(Unit)
+                    if (checkCloud) requestCloudCheck()
+                }
             }
         }
         if (!paused) try { cycle(force = true) } finally { if (!paused && !closed) startLoop() }
