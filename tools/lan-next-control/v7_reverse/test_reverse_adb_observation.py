@@ -144,13 +144,32 @@ class AdbEvidenceTests(unittest.TestCase):
         row=evidence.observation('PRIVATE_READY_CAT',255,b'',b'')
         self.assertFalse(control.protocol_stat_255_retry_allowed('ready.json','ONE_INSTRUMENTATION',True,True,False,row))
 
+    def route_progress(self,published=True):
+        keys=('initialSessionPresent','initialMessageExact','initialImageMatched','initialMessageCountCapped',
+            'durableSessionVerified','appendAttempted','appendCommitted','appendReturned','oracleWritten',
+            'groupBusy','groupPaused','groupErrorPresent','diagnosticWriteFailed','listenerObserved','relayBytesBothDirections',
+            'sourceSignedVersionObserved','sourceNativeFrontierObserved','sourceLocalReceiptObserved','publicationReadAvailable',
+            'initialMessageCount','localReverseCount','relayAccepted','relayConnected')
+        value={key:None for key in keys}
+        value.update(kind='CCB_V7_ANDROID_REVERSE_PROGRESS',phase='ordinary-repository-append' if published else 'real-production-lan-join',
+            sequence=1,firstFailurePhase=None,groupStage='READY' if published else 'JOINING',
+            isolatedRouteMode='ADB_FORWARD_TRANSPARENT_TLS',groupBusy=False,groupPaused=False,groupErrorPresent=False,
+            diagnosticWriteFailed=False,listenerObserved=published)
+        if published:value.update(initialSessionPresent=True,initialMessageExact=True,initialImageMatched=True,
+            initialMessageCount=1,initialMessageCountCapped=False)
+        value['listenerObservation']=dict(step='PRIVATE_ROUTE_WRITTEN' if published else 'NOT_REACHED',
+            firstFailureClass=None,samples=1 if published else 0,backgroundPhase='RUNNING',foregroundProtected=True,
+            **{key:True if published else None for key in ('accessAttached','nodeRootRead','portPresent','nearbyReady','socketBoundAndOpen')})
+        return value
+
     def run_stat_retry_driver(self,continuous=False,initially_active=True,exit_during_wait=False,cat_error=False,
-                              fault_file='ready.json',consume_ready_budget=False):
+                              fault_file='ready.json',consume_ready_budget=False,progress_scenario='PUBLISHED',route_missing=False):
         here=Path(__file__).resolve().parent
         with tempfile.TemporaryDirectory(prefix='pure-ready-',dir=here) as temporary:
             runner=Path(temporary).resolve();self.assertEqual(runner.parent,here)
             lab=runner/'ccb-v7-live';lab.mkdir();out=runner/'small';out.mkdir();result=out/'android.json'
-            calls=[];sleep_calls=[];state={'stat':0,'active':initially_active,'ready.json':0,'route.json':0}
+            calls=[];sleep_calls=[];state={'stat':0,'active':initially_active,'ready.json':0,'route.json':0,'now':1000.,
+                'ready_delivered':False,'offer_written':False,'progress_reads':0,'published':False,'early_route_reads':0,'route_start':None}
             class FakeProcess:
                 def poll(self):return None if state['active'] else 1
                 def terminate(self):state['active']=False
@@ -165,19 +184,42 @@ class AdbEvidenceTests(unittest.TestCase):
                 elif args[:3]==['shell','toybox','sha256sum']:stdout=b'a'*64+b'  synthetic\n'
                 elif args==['features']:stdout=b'shell_v2\ncmd\n'
                 elif args[-1:]==['pwd']:stdout=('/data/user/0/'+control.PACKAGE+'\n').encode()
-                elif args[-1:]==[control.APP_LAB+'progress.json']:code=1;stderr=self.stat_missing('progress.json')
+                elif args[-1:]==[control.APP_LAB+'progress.json']:
+                    if fault_file!='route.json' or not state['offer_written']:code=1;stderr=self.stat_missing('progress.json')
+                    elif 'stat' in args:
+                        if state['route_start'] is None:state['route_start']=state['now']
+                        state['progress_reads']+=1
+                        if (progress_scenario=='UNAVAILABLE_BEFORE' and state['progress_reads']==1 or
+                            progress_scenario=='UNAVAILABLE_AFTER' and state['progress_reads']>1):code=255
+                        else:stdout=b'1024\n'
+                    else:
+                        n=state['progress_reads']
+                        published=not (progress_scenario=='LATE_PUBLISHED' and n<3 or
+                            progress_scenario=='NEAR_DEADLINE' and n==1 or progress_scenario=='NEVER_PUBLISHED')
+                        value=self.route_progress(published)
+                        value['sequence']=n
+                        if progress_scenario=='INVALID_HEADER':value['kind']='INVALID_NATIVE_PROGRESS_HEADER'
+                        elif progress_scenario=='BRANCH_AFTER' and n>1:value=self.route_progress(False);value['sequence']=n
+                        elif progress_scenario=='FAILURE_AFTER' and n>1:value['firstFailurePhase']='ordinary-repository-append'
+                        if published and progress_scenario!='INVALID_HEADER':state['published']=True
+                        stdout=json.dumps(value).encode()
+
                 elif args[-1:] in ([control.APP_LAB+'ready.json'],[control.APP_LAB+'route.json']):
                     name=args[-1].removeprefix(control.APP_LAB)
                     if 'stat' in args:
                         state[name]+=1
+                        if name=='route.json' and not state['published']:state['early_route_reads']+=1
                         if name==fault_file:
                             state['stat']+=1
-                            if state['stat']==1 or continuous:code=255
+                            if name=='route.json' and route_missing:code=1;stderr=self.stat_missing(name)
+                            elif state['stat']==1 or continuous:code=255
                             else:stdout=b'36\n'
                         elif consume_ready_budget and name=='ready.json' and state[name]==1:code=255
                         else:stdout=b'36\n'
                     elif cat_error and name==fault_file:code=255
                     elif name=='ready.json':
+                        state['ready_delivered']=True
+                        if fault_file=='route.json':state['now']+=1.1
                         stdout=b'{"kind":"CCB_V7_ANDROID_READY","ready":true}'
                         if fault_file=='route.json':
                             (lab/'live-offer.json').write_text(json.dumps(dict(kind='CCB_V7_LIVE_SYNTHETIC_OFFER',
@@ -186,22 +228,30 @@ class AdbEvidenceTests(unittest.TestCase):
                         else:
                             (lab/'android-stop-requested.json').write_text('{"kind":"CCB_V7_REVERSE_STOP","reason":"PEER_OR_CONTROL_FAILED"}')
                     else:stdout=b'{}' # Deliberately refuse route contents after real driver read; no forward/native claim.
-                elif args[:6]==['shell','-T','run-as',control.PACKAGE,'sh','-c']:pass
+                elif args[:6]==['shell','-T','run-as',control.PACKAGE,'sh','-c']:
+                    state['offer_written']=True;state['now']+=1.1
                 elif 'rm' not in args:raise AssertionError('UNEXPECTED_MOCK_OPERATION')
                 return types.SimpleNamespace(returncode=code,stdout=stdout,stderr=stderr)
             def fake_sleep(seconds):
                 sleep_calls.append(seconds)
+                if fault_file=='route.json' and state['route_start'] is not None:
+                    if progress_scenario in ('INVALID_HEADER','NEVER_PUBLISHED'):state['now']+=180
+                    elif progress_scenario=='NEAR_DEADLINE' and state['progress_reads']==1:state['now']+=179.9
+                    elif progress_scenario in ('UNAVAILABLE_AFTER','BRANCH_AFTER','FAILURE_AFTER'):state['now']+=1.1
+                    else:state['now']+=seconds
+                else:state['now']+=seconds
                 if exit_during_wait:state['active']=False
             argv=['control','--adb',str(runner/'not-executed-adb'),'--control-tools',str(here.parent),
                 '--serial','emulator-5554','--candidate-sha256','a'*64,'--test-sha256','a'*64,
                 '--private-root',str(lab),'--result',str(result)]
             with patch.object(sys,'argv',argv),patch.dict(os.environ,{'GITHUB_ACTIONS':'true','RUNNER_OS':'Windows','RUNNER_TEMP':str(runner)}),\
                  patch.object(control.subprocess,'run',fake_run),patch.object(control.subprocess,'Popen',lambda *a,**k:FakeProcess()),\
-                 patch.object(control.time,'sleep',fake_sleep),patch.dict(sys.modules,{'instrumentation_report':types.SimpleNamespace()}),\
+                 patch.object(control.time,'sleep',fake_sleep),patch.object(control.time,'monotonic',lambda:state['now']),patch.dict(sys.modules,{'instrumentation_report':types.SimpleNamespace()}),\
                  contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(control.main(),2) # The pure test deliberately stops before any pairing/native claim.
             value=json.loads(result.read_bytes());self.assertFalse(value['oneNativeMethodPassed'])
             self.assertFalse(any(args[:1]==['forward'] for args in calls))
+            self.last_driver_state=state;self.last_driver_calls=calls
             return value,state['stat'],sleep_calls
 
     def test_ready_255_once_can_reach_exact_ready_then_controlled_stop(self):
@@ -282,18 +332,18 @@ class AdbEvidenceTests(unittest.TestCase):
         self.assertEqual(retry['retryAttempts'],1);self.assertEqual(retry['outcome'],'STAT_SUCCESS')
         self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
 
-    def test_route_inactive_instrumentation_refuses_first_255(self):
+    def test_route_inactive_instrumentation_refuses_before_first_stat(self):
         value,reads,sleeps=self.run_stat_retry_driver(fault_file='route.json',initially_active=False)
-        self.assertEqual(reads,1);self.assertEqual(sleeps,[])
+        self.assertEqual(reads,0);self.assertEqual(sleeps,[])
         self.assertFalse(value['protocolStatRetry']['budgetUsed'])
-        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
+        self.assertIsNone(value['firstFatalAdb']);self.assertEqual(value['errorCode'],'INSTRUMENTATION_ENDED_BEFORE_PROTOCOL')
 
     def test_route_exit_before_retry_prevents_second_stat(self):
         value,reads,_=self.run_stat_retry_driver(fault_file='route.json',exit_during_wait=True)
         self.assertEqual(reads,1);self.assertEqual(value['protocolStatRetry']['retryAttempts'],0)
-        self.assertEqual(value['protocolStatRetry']['outcome'],'REFUSED_INACTIVE')
-        self.assertFalse(value['protocolStatRetry']['processActiveForRetry'])
-        self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_STAT')
+        self.assertEqual(value['protocolStatRetry']['outcome'],'NOT_ATTEMPTED_STOP')
+        self.assertFalse(value['routeReadGate']['processActiveForRead'])
+        self.assertIsNone(value['firstFatalAdb']);self.assertEqual(value['errorCode'],'INSTRUMENTATION_ENDED_BEFORE_PROTOCOL')
 
     def test_route_cat_255_is_not_retried(self):
         value,reads,sleeps=self.run_stat_retry_driver(fault_file='route.json',cat_error=True)
@@ -301,6 +351,69 @@ class AdbEvidenceTests(unittest.TestCase):
         self.assertEqual(value['protocolStatRetry']['retryAttempts'],1)
         self.assertEqual(value['protocolStatRetry']['outcome'],'STAT_SUCCESS')
         self.assertEqual(value['firstFatalAdb']['operation'],'PRIVATE_ROUTE_CAT')
+
+
+    def test_route_marker_requires_exact_header_and_all_completed_witnesses(self):
+        value=self.route_progress();self.assertTrue(control.published_route_observed(value))
+        for key,item in [('kind','INVALID'),('isolatedRouteMode','INVALID'),('firstFailurePhase','startup'),
+            ('listenerObserved',1),('initialMessageExact',None),('initialImageMatched',False)]:
+            row=dict(value);row[key]=item
+            self.assertFalse(control.published_route_observed(row))
+        for key,item in [('step','RELAY_READY'),('firstFailureClass','IO'),('socketBoundAndOpen',False),('portPresent',1)]:
+            row=dict(value);row['listenerObservation']=dict(value['listenerObservation']);row['listenerObservation'][key]=item
+            self.assertFalse(control.published_route_observed(row))
+
+    def test_route_never_read_during_joining_before_published_signal(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='LATE_PUBLISHED')
+        self.assertEqual(self.last_driver_state['early_route_reads'],0)
+        self.assertGreaterEqual(self.last_driver_state['progress_reads'],3)
+        self.assertTrue(value['routeReadGate']['signalObserved']);self.assertEqual(reads,2)
+        self.assertEqual(value['errorCode'],'PRIVATE_ROUTE_FIELDS');self.assertFalse(value['oneNativeMethodPassed'])
+
+    def test_invalid_progress_header_cannot_latch_or_read_route(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='INVALID_HEADER')
+        self.assertEqual(reads,0);self.assertFalse(value['routeReadGate']['signalObserved'])
+        self.assertEqual(value['errorCode'],'PRIVATE_PROTOCOL_TIMEOUT')
+        self.assertFalse(value['protocolStatRetry']['budgetUsed'])
+
+    def test_unavailable_progress_before_signal_cannot_early_read(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='UNAVAILABLE_BEFORE')
+        self.assertEqual(self.last_driver_state['early_route_reads'],0)
+        self.assertTrue(value['routeReadGate']['signalObserved']);self.assertEqual(reads,2)
+        self.assertEqual(value['protocolStatRetry']['firstObservation']['operation'],'PRIVATE_ROUTE_STAT')
+
+    def test_published_fact_survives_later_unavailable_progress(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='UNAVAILABLE_AFTER')
+        self.assertTrue(value['routeReadGate']['signalObserved']);self.assertEqual(reads,2)
+        self.assertEqual(value['nativeProgressAvailability'],'UNAVAILABLE')
+        self.assertEqual(value['errorCode'],'PRIVATE_ROUTE_FIELDS');self.assertFalse(value['oneNativeMethodPassed'])
+
+    def test_published_fact_survives_later_nonfailure_branch_sample(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='BRANCH_AFTER')
+        self.assertTrue(value['routeReadGate']['signalObserved']);self.assertEqual(reads,2)
+        self.assertEqual(value['lastNativeProgress']['listenerObservation']['step'],'NOT_REACHED')
+        self.assertEqual(value['errorCode'],'PRIVATE_ROUTE_FIELDS');self.assertFalse(value['oneNativeMethodPassed'])
+
+    def test_native_first_failure_cannot_be_overridden_by_latched_fact(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='FAILURE_AFTER')
+        self.assertEqual(reads,1);self.assertTrue(value['routeReadGate']['firstFailureObserved'])
+        self.assertEqual(value['errorCode'],'NATIVE_FAILURE_BEFORE_ROUTE_READ')
+        self.assertEqual(value['protocolStatRetry']['retryAttempts'],0)
+        self.assertEqual(value['protocolStatRetry']['firstObservation']['operation'],'PRIVATE_ROUTE_STAT')
+
+    def test_gate_does_not_start_new_deadline_when_signal_arrives_late(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='NEAR_DEADLINE',route_missing=True)
+        self.assertEqual(reads,1);self.assertTrue(value['routeReadGate']['signalObserved'])
+        self.assertEqual(value['errorCode'],'PRIVATE_PROTOCOL_TIMEOUT')
+        elapsed=self.last_driver_state['now']-self.last_driver_state['route_start']
+        self.assertGreaterEqual(elapsed,180);self.assertLess(elapsed,181)
+        self.assertFalse(value['protocolStatRetry']['budgetUsed']);self.assertFalse(value['oneNativeMethodPassed'])
+
+    def test_absent_publication_signal_expires_without_any_route_adb(self):
+        value,reads,_=self.run_stat_retry_driver(fault_file='route.json',progress_scenario='NEVER_PUBLISHED')
+        self.assertEqual(reads,0);self.assertFalse(value['routeReadGate']['signalObserved'])
+        self.assertFalse(value['routeReadGate']['statReadAttempted'])
+        self.assertEqual(value['errorCode'],'PRIVATE_PROTOCOL_TIMEOUT')
 
 
 if __name__=='__main__':unittest.main()

@@ -75,6 +75,19 @@ def owned_forward(rows,serial,port,relay_port):
     return sum(line.split()==[serial,'tcp:'+str(port),'tcp:'+str(relay_port)]
                for line in rows.splitlines())==1
 
+def published_route_observed(value):
+    # Called only after safe_native_progress has accepted this fixed private protocol.
+    listener=value.get('listenerObservation') if type(value) is dict else None
+    return (type(value) is dict and value.get('kind')=='CCB_V7_ANDROID_REVERSE_PROGRESS' and
+        value.get('isolatedRouteMode')=='ADB_FORWARD_TRANSPARENT_TLS' and
+        value.get('firstFailurePhase') is None and value.get('listenerObserved') is True and
+        value.get('initialMessageExact') is True and value.get('initialImageMatched') is True and
+        type(listener) is dict and listener.get('step')=='PRIVATE_ROUTE_WRITTEN' and
+        listener.get('firstFailureClass') is None and
+        all(listener.get(key) is True for key in ('accessAttached','nodeRootRead','portPresent','nearbyReady','socketBoundAndOpen')))
+
+
+
 STAT_RETRY_PHASES={'ready.json':'ONE_INSTRUMENTATION','route.json':'ISOLATED_REVERSE_ROUTE'}
 def protocol_stat_255_retry_allowed(name,phase,alive_before,alive_after,budget_used,value):
     operation={'ready.json':'PRIVATE_READY_STAT','route.json':'PRIVATE_ROUTE_STAT'}.get(name)
@@ -98,10 +111,12 @@ def main():
         'terminal':False,'nativeProgressAvailability':'UNREAD','lastNativeProgress':None,'checkpointWriteFailed':False,
         'firstFatalAdb':None,'lastAdbOperation':None,'lastProgressAdbFailure':None,'instrumentationAtFailure':None,
         'shellV2Observed':False,'runAsRootObserved':False,
+        'routeReadGate':{'signalObserved':False,'signalSequence':None,'firstFailureObserved':False,
+                         'statReadAttempted':False,'processActiveAtSignal':None,'processActiveForRead':None},
         'protocolStatRetry':{'budgetUsed':False,'retryAttempts':0,'firstObservation':None,'retryObservation':None,
                           'firstProcessActive':None,'processActiveForRetry':None,'outcome':'NOT_USED'}}
     proc=None;logs=[];prefix=[str(args.adb),'-s',args.serial];result_owned=False;last_progress=0;forward=None
-    stat_retry_process=None;stat_retry_original=None
+    stat_retry_process=None;stat_retry_original=None;route_signal_process=None
     def checkpoint():
         if result_owned:
             try:publish(args.result,r,replace=True)
@@ -158,7 +173,7 @@ def main():
         if stat is None:return None
         return call('PRIVATE_'+key+'_CAT','shell','-T','run-as',PACKAGE,'cat',APP_LAB+name)
     def observe_progress(force=False):
-        nonlocal last_progress
+        nonlocal last_progress,route_signal_process
         if not logs or not force and time.monotonic()-last_progress<1:return
         last_progress=time.monotonic()
         try:raw=private_read('progress.json')
@@ -168,9 +183,27 @@ def main():
         else:
             if raw is None:r['nativeProgressAvailability']='MISSING'
             else:
-                try:r['lastNativeProgress']=safe_native_progress(raw);r['nativeProgressAvailability']='VALID'
+                try:
+                    value=safe_native_progress(raw)
+                    r['lastNativeProgress']=value;r['nativeProgressAvailability']='VALID'
+                    gate=r['routeReadGate']
+                    if value['firstFailurePhase'] is not None:gate['firstFailureObserved']=True
+                    if (r['phase']=='ISOLATED_REVERSE_ROUTE' and not gate['signalObserved'] and
+                        not gate['firstFailureObserved'] and published_route_observed(value) and
+                        proc is not None and proc.poll() is None):
+                        route_signal_process=proc
+                        gate.update(signalObserved=True,signalSequence=value['sequence'],processActiveAtSignal=True)
                 except Exception:r['nativeProgressAvailability']='INVALID'
         checkpoint()
+    def read_published_route():
+        gate=r['routeReadGate']
+        need(not gate['firstFailureObserved'],'NATIVE_FAILURE_BEFORE_ROUTE_READ')
+        if not gate['signalObserved']:return None
+        active=proc is route_signal_process and proc is not None and proc.poll() is None
+        gate['processActiveForRead']=active
+        need(active,'INSTRUMENTATION_ENDED_BEFORE_PROTOCOL')
+        gate['statReadAttempted']=True;checkpoint()
+        return private_read('route.json')
     def private_write(name,raw):
         need(name in ('offer.json','windows-received.json') and len(raw)<=20000,'PRIVATE_WRITE_ENUM_OR_LIMIT')
         script='umask 077; set -C; cat > '+APP_LAB+name
@@ -232,7 +265,7 @@ def main():
              re.fullmatch(r'[a-f0-9]{64}',value['imageSha256']),'SYNTHETIC_OFFER_INVALID')
         private_write('offer.json',offer);offer=value=None
         r['phase']='ISOLATED_REVERSE_ROUTE';checkpoint()
-        route=isolated_route(wait(lambda:private_read('route.json'),180))
+        route=isolated_route(wait(read_published_route,180))
         allocated=call('FORWARD_CREATE','forward','--no-rebind','tcp:0','tcp:'+str(route['relayPort'])).strip()
         need(re.fullmatch(rb'[0-9]{4,5}',allocated),'FORWARD_ALLOCATED_PORT')
         forward=int(allocated);need(1024<=forward<=65535,'FORWARD_PORT_RANGE')
