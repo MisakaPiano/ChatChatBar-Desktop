@@ -5,7 +5,7 @@ data class LanSyncGroupRouteStatus(val text: String, val lastSuccessAt: Long? = 
 data class LanSyncGroupDeviceRow(val id: String, val name: String, val status: String, val thisDevice: Boolean,
     val managementIdentity: Boolean, val canRevoke: Boolean)
 data class LanSyncGroupPeerConfirmation(val binding: String, val name: String, val fingerprint: String)
-data class LanSyncGroupRevocationConfirmation(val binding: String, val name: String)
+data class LanSyncGroupRevocationConfirmation(val binding: String, val name: String, val fingerprint: String)
 
 /** Screen projection only. Secret strings are transient, never saveable UI/backup state or diagnostic text. */
 data class LanSyncGroupPanelState(val stage: LanSyncGroupPanelStage = LanSyncGroupPanelStage.EMPTY,

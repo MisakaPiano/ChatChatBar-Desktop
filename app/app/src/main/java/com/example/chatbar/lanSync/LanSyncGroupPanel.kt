@@ -156,6 +156,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
             }
             state.devices.forEach { device ->
                 CbText(device.name + if (device.thisDevice) " · 本机" else if (device.managementIdentity) " · 恢复管理身份" else "")
+                CbText("设备指纹 ${device.id}")
                 CbText(device.status)
                 if (device.canRevoke) CbButton("撤销此设备", { actions.prepareRevocation(device.id) },
                     enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Destructive)
@@ -186,6 +187,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         state.revocation?.let { review ->
             CbText("撤销 ${review.name}？")
+            CbText("设备指纹 ${review.fingerprint}")
             CbText("该设备将无法取得新的同步密钥，已保存的副本仍会保留。网盘账号授权需要单独撤销。")
             CbButton("确认撤销", { actions.confirmRevocation(review.binding) }, enabled = !interactionBlocked && state.managementUnlocked, variant = ButtonVariant.Destructive)
             CbButton("取消", actions::cancelRevocation, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)

@@ -908,8 +908,8 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             requireNotNull(recoveredManagement) { "SYNC_GROUP_MANAGEMENT_LOCKED" }.prepareRevocation(device)
         } else { requireNotNull(draft) { "SYNC_GROUP_MANAGEMENT_LOCKED" }; founder().prepareRevocation(device) }
         revocation = preview
-        val name = state.value.devices.firstOrNull { it.id == device }?.name ?: "已加入设备"
-        mutableState.update { it.copy(revocation = LanSyncGroupRevocationConfirmation(preview.request.approvalBinding, name)) }
+        val name = state.value.devices.firstOrNull { it.id == preview.device }?.name ?: "已加入设备"
+        mutableState.update { it.copy(revocation = LanSyncGroupRevocationConfirmation(preview.request.approvalBinding, name, preview.device)) }
     }
     override fun confirmRevocation(binding: String) = action("撤销设备") {
         val preview = requireNotNull(revocation) { "SYNC_GROUP_REVOCATION_CONFIRMATION_REQUIRED" }
@@ -1181,7 +1181,7 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                 val hint = try { current.peerDisplayName(id) }
                 catch (cancelled: CancellationException) { throw cancelled }
                 catch (error: Exception) { if (hintFailure == null) hintFailure = error; null }
-                hint ?: "已加入设备 · ${id.take(8)}"
+                hint ?: "已加入设备"
             }
             LanSyncGroupDeviceRow(id, name, if (member.active) "已加入" else "已撤销",
                 id == current.device, id == manager, false)

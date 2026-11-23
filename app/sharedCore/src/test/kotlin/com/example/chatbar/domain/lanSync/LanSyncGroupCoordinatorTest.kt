@@ -795,6 +795,66 @@ class LanSyncGroupCoordinatorTest {
         } finally { recipient.closeAndDrain() }
     }
 
+    @Test fun sameNamedComputersAndPhonesKeepDistinctRevocationIdentitiesAfterColdOpen() = fixture { f ->
+        val founder = readyCoordinator(f)
+        val code = requireNotNull(f.recoveryCode)
+
+        suspend fun approveDevice(name: String): String {
+            founder.unlockManagement(code)
+            await { !founder.state.value.busy && founder.state.value.managementCanInvite }
+            founder.createInvitation()
+            await { !founder.state.value.busy && founder.state.value.invitation != null }
+            val offer = requireNotNull(founder.state.value.invitation)
+            val peer = LanSyncTlsIdentity.create()
+            val recipient = SyncDeviceEncryptionKey.create(peer.fingerprint)
+            LanSyncGroupInviteClient.exchange(offer, peer, recipient, name,
+                { f.network.connect(peer, LanSyncPeer(offer.inviter, "synthetic inviter", offer.host, offer.port)) })
+            await { !founder.state.value.busy && founder.state.value.peerConfirmation?.fingerprint == peer.fingerprint }
+            founder.acceptPeer(requireNotNull(founder.state.value.peerConfirmation).binding)
+            await { !founder.state.value.busy && founder.state.value.devices.any { it.id == peer.fingerprint } }
+            assertNull(founder.state.value.error)
+            return peer.fingerprint
+        }
+
+        val sameNames = listOf("CCB 电脑", "Synthetic Android model")
+        val roster = sameNames.associateWith { approveDevice(it) to approveDevice(it) }
+        founder.closeAndDrain()
+        val reopened = f.coordinator()
+        reopened.open()
+        await { !reopened.state.value.busy && reopened.state.value.stage == LanSyncGroupPanelStage.READY }
+        val access = requireNotNull(f.founder().runtimeAccess())
+        assertTrue(reopened.state.value.devices.any { it.thisDevice && it.id == access.device })
+
+        for ((name, pair) in roster) {
+            val (other, selected) = pair
+            val displayed = reopened.state.value.devices.filter { it.name == name }
+            assertEquals(setOf(other, selected), displayed.map { it.id }.toSet())
+            reopened.unlockManagement(code)
+            await { !reopened.state.value.busy && reopened.state.value.managementUnlocked }
+            reopened.prepareRevocation(other)
+            await { !reopened.state.value.busy && reopened.state.value.revocation?.fingerprint == other }
+            val previous = requireNotNull(reopened.state.value.revocation)
+            assertEquals(name, previous.name)
+
+            reopened.prepareRevocation(selected)
+            await { !reopened.state.value.busy && reopened.state.value.revocation?.fingerprint == selected }
+            val confirmation = requireNotNull(reopened.state.value.revocation)
+            assertEquals(name, confirmation.name)
+            assertNotEquals(previous.binding, confirmation.binding)
+            val before = access.ledger().current().reference()
+            reopened.confirmRevocation(previous.binding)
+            await { !reopened.state.value.busy && reopened.state.value.error.orEmpty().contains("SYNC_GROUP_REVOCATION_CONFIRMATION_REQUIRED") }
+            assertEquals(before, access.ledger().current().reference())
+
+            reopened.confirmRevocation(confirmation.binding)
+            await { !reopened.state.value.busy && reopened.state.value.devices.any { it.id == selected && it.status == "已撤销" } }
+            assertNull(reopened.state.value.error)
+            val signed = access.ledger().current().members
+            assertFalse(signed.getValue(selected).active)
+            assertTrue(signed.getValue(other).active)
+        }
+    }
+
     @Test fun fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation() = fixture { f ->
         val coordinator = readyCoordinator(f)
         coordinator.unlockManagement(requireNotNull(f.recoveryCode))
