@@ -9,6 +9,7 @@ object LanSyncMalformedHeifFixture {
 
     fun withoutPrimaryItem(): ByteArray = meta(12)
     fun truncatedMetadata(): ByteArray = meta(64)
+    fun truncatedFileType(): ByteArray = withoutMeta().also { ByteBuffer.wrap(it).putInt(64) }
 
     private fun meta(declaredLength: Int): ByteArray = withoutMeta() + ByteBuffer.allocate(12)
         .putInt(declaredLength).put("meta".toByteArray(Charsets.US_ASCII)).putInt(0).array()

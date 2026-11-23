@@ -12,12 +12,28 @@ object LanSyncHeifStill {
 
     fun inspect(path: Path): Dimensions? = FileChannel.open(path, READ, NOFOLLOW_LINKS).use { file ->
         val size = file.size()
-        if (size < 16) return null
+        if (size < 8) return null
         val signature = file.bytes(0, 8)
-        signature.u(4)
+        val declared = signature.u(4)
         if (signature.type() != "ftyp") return null
-        val brand = file.box(0, size)
-        need(brand.length in 8L..1024L && (brand.length - 8) % 4 == 0L)
+        fun hasHeicMajorBrand(): Boolean {
+            val majorStart = if (declared == 1L) 16L else 8L
+            return (declared <= 1L || declared >= 12L) && size >= majorStart + 4 &&
+                file.bytes(majorStart, 4).type() in heicBrands
+        }
+        if (size < 16) {
+            if (hasHeicMajorBrand()) throw LanSyncInvalidImage()
+            return null
+        }
+        val brand = try {
+            file.box(0, size).also {
+                requireSupported(it.length <= 1024)
+                need(it.length >= 8 && (it.length - 8) % 4 == 0L)
+            }
+        } catch (failure: MalformedStructure) {
+            if (hasHeicMajorBrand()) throw LanSyncInvalidImage(failure)
+            throw failure
+        }
         val brands = file.bytes(brand.start, brand.length.toInt())
         val major = brands.type()
         brands.u(4)

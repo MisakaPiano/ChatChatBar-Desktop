@@ -440,9 +440,20 @@ class LanSyncGroupNodeTest {
         checkOwnedBadImageIsolation { LanSyncMalformedHeifFixture.truncatedMetadata() }
     }
 
+    @Test fun aTruncatedFileTypeWithAConfirmedHeicMajorOnlyHoldsTheOwningChat() =
+        checkOwnedBadImageIsolation { LanSyncMalformedHeifFixture.truncatedFileType() }
+
     @Test fun unsupportedHeifMetadataAndMetadataAboveTheBudgetRemainStrictErrors() {
         val file = Files.createTempFile("synthetic-heif-limits-", ".heic")
         try {
+            val otherBrand = LanSyncMalformedHeifFixture.truncatedFileType().also {
+                "avif".toByteArray(Charsets.US_ASCII).copyInto(it, destinationOffset = 8)
+            }
+            Files.write(file, otherBrand)
+            val unrecognized = assertFailsWith<IllegalArgumentException> { LanSyncHeifStill.inspect(file) }
+            assertFalse(unrecognized is LanSyncInvalidImage)
+            assertEquals("SYNC_IMAGE_HEIF_INVALID", unrecognized.message)
+
             val unsupported = LanSyncMalformedHeifFixture.withoutPrimaryItem().also { it[it.size - 4] = 1 }
             Files.write(file, unsupported)
             val version = assertFailsWith<IllegalArgumentException> { LanSyncHeifStill.inspect(file) }

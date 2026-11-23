@@ -65,6 +65,7 @@ jobs:
             --tests '*LanSyncGroupJoiningTest.expiredUnusedInviteAndAnUncertainAttemptRefreshTheCapabilityWithoutChangingRecipientOrOperation' \
             --tests '*LanSyncGroupJoiningTest.coldSignedLedgerForkKeepsTheSameApplicationForExplicitRecheckWithoutShelving' \
             --tests '*LanSyncGroupNodeTest.recognizedHeifWithAnIncompleteOrTruncatedMetadataBoxOnlyHoldsTheOwningChat' \
+            --tests '*LanSyncGroupNodeTest.aTruncatedFileTypeWithAConfirmedHeicMajorOnlyHoldsTheOwningChat' \
             --tests '*LanSyncGroupNodeTest.unsupportedHeifMetadataAndMetadataAboveTheBudgetRemainStrictErrors' \
             --tests '*LanSyncGroupCloudRecoveryOwnerTest.coordinatorReadyLoadKeepsTheInterruptedExternalRecoveryEntryAndExplicitConfirmationFinishesIt' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
