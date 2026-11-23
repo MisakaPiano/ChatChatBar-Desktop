@@ -12,10 +12,11 @@ import java.io.OutputStream
 class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate: String, peerCertificate: String,
     private val currentLedger: () -> SyncDeviceLedger, private val backend: CiphertextStore,
     private val recoveredReads: ((SyncVersionRef) -> Map<CiphertextObjectKey, Set<CiphertextDescriptor>>)?,
+    private val verifyRecoveredBlob: ((SyncVersionRef, CiphertextObjectMetadata) -> Boolean)?,
     private val revocationNotice: (String) -> SyncLedgerNoticeEntry?) : CiphertextStore {
     constructor(trust: SyncGroupTrust, localCertificate: String, peerCertificate: String, currentLedger: () -> SyncDeviceLedger,
         backend: CiphertextStore, revocationNotice: (String) -> SyncLedgerNoticeEntry?) :
-        this(trust, localCertificate, peerCertificate, currentLedger, backend, null, revocationNotice)
+        this(trust, localCertificate, peerCertificate, currentLedger, backend, null, null, revocationNotice)
     private val local = SyncDeviceSignatures.decode(localCertificate)
     private val peer = SyncDeviceSignatures.decode(peerCertificate)
     val group: SyncStoreId get() = trust.group
@@ -104,14 +105,20 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
             else if (expected == null) allowed.firstOrNull() ?: return null
             else if (expected in allowed) expected else return null
         }
-        val result = if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, chosen)
-            else backend.metadata(key)?.also { require(chosen == null || chosen == it.descriptor) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
+        val result = rawMetadata(key, chosen)
         authorize(key)
         val latest = this.ledger()
         if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
         else if (result != null && readChoices(latest, key)?.contains(result.descriptor) == false) denied()
+        if (result != null && key.kind == CiphertextObjectKind.BLOB && verifyRecoveredBlob != null) {
+            if (!verifyRecoveredBlob.invoke(latest.current().reference(), result)) return null
+            requireReadAllowed(key, result.descriptor)
+        }
         return result
     }
+    private fun rawMetadata(key: CiphertextObjectKey, expected: CiphertextDescriptor?): CiphertextObjectMetadata? =
+        if (backend is LanSyncGroupReplicaReader) backend.metadataExact(key, expected)
+        else backend.metadata(key)?.also { require(expected == null || expected == it.descriptor) { "SYNC_GROUP_WIRE_OBJECT_CHANGED" } }
     override fun readTo(key: CiphertextObjectKey, destination: OutputStream, expected: CiphertextDescriptor?): CiphertextObjectMetadata? {
         authorize(key)
         val ledger = ledger()
@@ -131,7 +138,8 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
             override fun write(bytes: ByteArray, offset: Int, length: Int) { requireReadAllowed(key, selected); destination.write(bytes, offset, length) }
             override fun flush() { requireReadAllowed(key, selected); destination.flush() }
         }
-        val result = backend.readTo(key, checked, selected)
+        val source = if (recoveredReads != null && backend is LanSyncGroupReplicaReader) backend.cachedOnly() else backend
+        val result = source.readTo(key, checked, selected)
         requireReadAllowed(key, selected)
         val latest = this.ledger()
         if (!active(latest)) require(result == notice(latest)) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
@@ -141,16 +149,42 @@ class LanSyncGroupPeerStore(private val trust: SyncGroupTrust, localCertificate:
         require(pageSize in 1..1000) { "SYNC_GROUP_PEER_PAGE_SIZE" }
         val ledger = ledger()
         if (active(ledger)) {
-            val result = backend.listCommits(cursor, pageSize)
+            val checkpoint = ledger.current().reference()
+            val scope = recoveredReads?.invoke(checkpoint)
+            val result = if (scope == null) backend.listCommits(cursor, pageSize) else recoveredPage(checkpoint, scope, cursor, pageSize)
             val latest = this.ledger()
             if (!active(latest)) denied()
-            val allowed = recoveredReads?.invoke(latest.current().reference()) ?: return result
-            return CommitPage(result.entries.filter { it.descriptor in allowed[it.key].orEmpty() }, result.nextCursor)
+            if (scope != null && (latest.current().reference() != checkpoint || result.entries.any {
+                readChoices(latest, it.key)?.contains(it.descriptor) == false
+            })) {
+                throw CiphertextStoreException(CiphertextStoreFailure.INVALID_CURSOR)
+            }
+            return result
         }
         // An active-peer backend cursor has no authority over the newly restricted view.
         if (cursor != null) throw CiphertextStoreException(CiphertextStoreFailure.INVALID_CURSOR)
         val notice = notice(ledger)
         require(metadataExact(notice.key, notice.descriptor) == notice) { "SYNC_GROUP_PEER_NOTICE_MISSING_OR_CHANGED" }
         return CommitPage(listOf(notice), null)
+    }
+
+    private fun recoveredPage(checkpoint: SyncVersionRef, scope: Map<CiphertextObjectKey, Set<CiphertextDescriptor>>,
+        cursor: CommitCursor?, size: Int): CommitPage {
+        val prefix = "recovered1:${checkpoint.bodyHash}:"
+        fun position(value: CiphertextObjectMetadata) =
+            "${value.key.id.value}:${value.descriptor.length.toString().padStart(19, '0')}:${value.descriptor.sha256.hex}"
+        val after = cursor?.token?.let { token ->
+            if (!token.startsWith(prefix)) throw CiphertextStoreException(CiphertextStoreFailure.INVALID_CURSOR)
+            token.removePrefix(prefix).also {
+                if (!it.matches(Regex("[a-f0-9]{32}:[0-9]{19}:[a-f0-9]{64}"))) throw CiphertextStoreException(CiphertextStoreFailure.INVALID_CURSOR)
+            }
+        }
+        val visible = scope.asSequence().filter { it.key.kind == CiphertextObjectKind.COMMIT }
+            .flatMap { (key, descriptors) -> descriptors.asSequence().map { CiphertextObjectMetadata(key, it) } }
+            .filter { after == null || position(it) > after }.sortedBy(::position)
+            .filter { rawMetadata(it.key, it.descriptor) == it }.take(size + 1).toList()
+        val rows = visible.take(size)
+        val next = if (visible.size > size) CommitCursor(prefix + position(rows.last())) else null
+        return CommitPage(rows, next)
     }
 }

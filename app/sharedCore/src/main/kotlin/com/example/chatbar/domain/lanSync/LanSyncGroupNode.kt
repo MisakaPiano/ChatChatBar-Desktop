@@ -55,6 +55,7 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private val operation = Mutex()
     private val discoveryOperation = Mutex()
     @Volatile private var current: SyncInboxReconciliation? = null
+    @Volatile private var peerResources: Pair<SyncVersionRef, Map<SyncVersionRef, Set<SyncPlaintextIdentity>>>? = null
     private var pendingRestorations: Map<String, Set<String>> = emptyMap()
     private var pendingResolutions: Set<String> = emptySet()
     private var heldResolutions: Set<String> = emptySet()
@@ -86,6 +87,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
     private fun currentView() = requireNotNull(current) { "SYNC_GROUP_NODE_RECONCILIATION_REQUIRED" }
     internal fun peerReadView(checkpoint: SyncVersionRef): SyncInboxReconciliation? =
         current?.takeIf { !it.trustBlocked && it.ledgerCheckpoint == checkpoint && it.history != null }
+    internal fun peerResourceProofs(checkpoint: SyncVersionRef): Map<SyncVersionRef, Set<SyncPlaintextIdentity>> =
+        peerResources?.takeIf { it.first == checkpoint }?.second.orEmpty()
     private fun inbox(store: CiphertextStore = dependencyStore) = SyncGroupInbox(inboxRoot, store, custody, recipient)
 
     internal class MembershipRecoveryContent(val keys: Map<SyncStoreId, SyncStreamingCipher>,
@@ -358,7 +361,8 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
         }
         fun held(stage: LanSyncGroupNodeStage) = LanSyncGroupNodeView(stage, currentView(), state, null, emptySet(), emptyMap(), null)
         if (currentView().trustBlocked) return held(LanSyncGroupNodeStage.TRUST_BLOCKED)
-        val latest = custody.ledger().current()
+        val signedLedger = custody.ledger()
+        val latest = signedLedger.current()
         if (latest.members[identity.fingerprint]?.active != true) return held(LanSyncGroupNodeStage.DEVICE_REVOKED)
         try { custody.key(latest.epoch) } catch (failure: IllegalArgumentException) {
             if (failure.message == "SYNC_GROUP_CUSTODY_KEY_MISSING") return held(LanSyncGroupNodeStage.WAITING_FOR_KEY)
@@ -398,6 +402,15 @@ class LanSyncGroupNode(private val root: Path, private val workspace: LanSyncWor
                 retainedIndexCost = lanSyncAddLength(retainedIndexCost,
                     512 + (result.available?.decoded?.metadataIndexCost ?: 0))
                 require(retainedIndexCost <= workspace.metadataBudget.maximumIndexCost) { "SYNC_METADATA_INDEX_BUDGET" }
+            }
+        }
+        if (latest.recovery != null || signedLedger.authorityHistory(latest.reference()).any { it.recovery != null }) {
+            val proven = dependencies.values.mapNotNull { it.available }
+                .groupBy { it.version }.mapValues { (_, units) -> units.flatMap { it.decoded.dependencies }.toSet() }
+            val checkpoint = latest.reference()
+            val retained = peerResourceProofs(checkpoint)
+            if (proven.any { (version, resources) -> retained[version] != resources }) {
+                peerResources = checkpoint to (retained + proven)
             }
         }
         val plan = exclusive { workspace.captureGroup(identity.fingerprint, projection).use {

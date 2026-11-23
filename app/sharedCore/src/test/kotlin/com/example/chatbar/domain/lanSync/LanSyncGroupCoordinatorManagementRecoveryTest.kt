@@ -7,6 +7,7 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.domain.image.PrivacyPngEncoder
 import com.example.chatbar.domain.syncStore.*
 import java.net.InetAddress
 import java.net.Socket
@@ -294,14 +295,33 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                     }
                     fun remote(caller: LanSyncGroupAppTransport, host: LanSyncGroupRuntimeAccess, port: Int) =
                         caller.remote(LanSyncPeer(host.device, "synthetic previously approved member", "10.0.0.1", port))
-                    fun writeChat(data: Path, session: String, message: String, body: String): Path {
+                    fun writeChat(data: Path, session: String, message: String, body: String, images: List<Path> = emptyList()): Path {
                         val chat = Files.createDirectories(data.resolve("entities/chat_sessions")).resolve("$session.json")
                         if (!Files.exists(chat)) LanSyncJsonFiles.write(chat, ChatSession.serializer(),
                             ChatSession(session, "separate-card-$session", session, createdAt = 1, updatedAt = 1))
                         val record = Files.createDirectories(data.resolve("entities/chat_messages")).resolve("${session}_$message.json")
                         LanSyncJsonFiles.write(record, ChatMessage.serializer(), ChatMessage(message, session, MessageRole.USER, body,
-                            createdAt = 2, updatedAt = 2))
+                            images = images.map(Path::toString), createdAt = 2, updatedAt = 2))
                         return record
+                    }
+                    fun png(name: String, color: Int): Path {
+                        val original = Files.createDirectories(joined.data.resolve("images")).resolve(name)
+                        Files.newOutputStream(original).use { PrivacyPngEncoder.write(it, 8, 8) { _, row -> row.fill(color) } }
+                        return original
+                    }
+
+                    val sharedPhoto = if (continueAuthor) png("already-accepted.png", 0xff24a45a.toInt()) else null
+                    val oldApproved = sharedPhoto?.let { photo ->
+                        writeChat(joined.data, "accepted", "original", "原组已经批准的合成正文", listOf(photo))
+                        val approved = b.node.commit(b.node.inspect().review(setOf("conversation/accepted")))
+                        b.node.upload(approved.entry.request.operation, b.replica, b.localTarget)
+                        val serving = transport(b); val caller = transport(a)
+                        val route = remote(caller, b, serving.start())
+                        try {
+                            receiveFrom(a, route)
+                            assertTrue(requireNotNull(a.node.inspectLocal().reconciliation.history).contains(approved.entry.version.reference()))
+                        } finally { caller.closeAndDrain(); serving.closeAndDrain() }
+                        approved
                     }
 
                     val manager = b.managementRecovery()
@@ -349,7 +369,8 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                     assertTrue(dRow.members.getValue(recipientD.fingerprint).active)
 
                     val held = if (continueAuthor) {
-                        writeChat(joined.data, "discarded", "original", "落选内容只由原设备保留")
+                        val exclusive = png("discarded-only.png", 0xff4269cc.toInt())
+                        writeChat(joined.data, "discarded", "original", "落选内容只由原设备保留", listOf(requireNotNull(sharedPhoto), exclusive))
                         val signed = b.node.commit(b.node.inspect().review(setOf("conversation/discarded")))
                         assertEquals(dRow.reference(), signed.entry.version.deviceLedger)
                         b.node.upload(signed.entry.request.operation, b.replica, b.localTarget)
@@ -497,6 +518,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                                 firstA.ledger().admission(emptyList(), emptyList()).requireAuthorized(wrongAnchor)
                             }.message)
                             secondB.node.upload(firstOperation, secondB.replica, secondB.localTarget)
+                            secondB.node.inspectLocal()
 
                             suspend fun receiveIndependent(aReceiver: LanSyncGroupRuntimeAccess, bSource: LanSyncGroupRuntimeAccess, id: String, body: String) {
                                 val bTransport = transport(bSource); val aTransport = transport(aReceiver)
@@ -509,9 +531,18 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                                         assertFalse(page.entries.any { it.key == held.metadata.metadata.key })
                                         cursor = page.nextCursor
                                     } while (cursor != null)
-                                    val retainedObjects = listOf(held.metadata.metadata) + held.metadata.envelope.blobs.values.map {
+                                    val accepted = requireNotNull(oldApproved)
+                                    val sharedBinding = accepted.metadata.envelope.blobs.getValue(lanSyncHash(Files.readAllBytes(requireNotNull(sharedPhoto))))
+                                    val sharedMeta = CiphertextObjectMetadata(sharedBinding.key, sharedBinding.descriptor)
+                                    val allHeld = listOf(held.metadata.metadata) + held.metadata.envelope.blobs.values.map {
                                         CiphertextObjectMetadata(it.key, it.descriptor)
                                     }
+                                    assertTrue(sharedMeta in allHeld, "Both originals use the same exact verified old ciphertext")
+                                    assertEquals(sharedMeta, route.metadata(sharedMeta.key))
+                                    val png = ByteArrayOutputStream()
+                                    assertEquals(sharedMeta, route.readTo(sharedMeta.key, png, sharedMeta.descriptor))
+                                    assertEquals(sharedMeta.descriptor.length, png.size().toLong())
+                                    val retainedObjects = allHeld - sharedMeta
                                     retainedObjects.forEach { original ->
                                         assertEquals(original, bSource.replica.metadata(original.key))
                                         assertNull(route.metadata(original.key))
@@ -539,6 +570,7 @@ class LanSyncGroupCoordinatorManagementRecoveryTest {
                             assertNull(next.entry.version.authorRecovery)
                             assertEquals(first.authorSequence + 1, next.entry.version.authorSequence)
                             thirdB.node.upload(next.entry.request.operation, thirdB.replica, thirdB.localTarget)
+                            thirdB.node.inspectLocal()
                             receiveIndependent(requireNotNull(reopened.runtimeAccess()), thirdB, "second", "双方冷开后续发")
                             val history = requireNotNull(firstA.node.inspectLocal().reconciliation.history)
                             assertFalse(history.contains(old.reference()))

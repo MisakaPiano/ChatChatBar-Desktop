@@ -22,14 +22,23 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     val node = node(reader)
     @Volatile var routeFailure: (String, Exception) -> Unit = { _, failure -> throw failure }
     private val notices = mutableMapOf<String, Pair<SyncVersionRef, SyncLedgerNoticeEntry>>()
-    private var recoveredReads: Pair<SyncInboxReconciliation, Map<CiphertextObjectKey, Set<CiphertextDescriptor>>>? = null
-    @Synchronized private fun recoveredReadScope(checkpoint: SyncVersionRef): Map<CiphertextObjectKey, Set<CiphertextDescriptor>> {
-        val view = node.peerReadView(checkpoint) ?: return mapOf(vault.key to setOf(vaultDescriptor))
-        recoveredReads?.takeIf { it.first === view }?.let { return it.second }
+    private data class RecoveredReads(val objects: Map<CiphertextObjectKey, Set<CiphertextDescriptor>>,
+        val blobs: Map<CiphertextObjectMetadata, List<SyncEnvelopeBlobBinding>>)
+    private data class ReadCache(val view: SyncInboxReconciliation, val resources: Map<SyncVersionRef, Set<SyncPlaintextIdentity>>, val reads: RecoveredReads)
+    private val offlineReadControls = RecoveredReads(mapOf(vault.key to setOf(vaultDescriptor)), emptyMap())
+    private var recoveredReads: ReadCache? = null
+    private val verifiedPeerBlobs = java.util.concurrent.ConcurrentHashMap.newKeySet<LanSyncGroupTargetRawCheck>()
+    private val peerProofWork by lazy { Files.createDirectories(work.resolve("peer-object-proof")) }
+
+    @Synchronized private fun recoveredReadScope(checkpoint: SyncVersionRef): RecoveredReads {
+        val view = node.peerReadView(checkpoint) ?: return offlineReadControls
+        val resources = node.peerResourceProofs(checkpoint)
+        recoveredReads?.takeIf { it.view === view && it.resources === resources }?.let { return it.reads }
         val controls = setOf(SyncInboxStage.KEY_ADMITTED, SyncInboxStage.LEDGER_ADMITTED, SyncInboxStage.NOT_FOR_DEVICE, SyncInboxStage.DEVICE_REVOKED)
         val history = requireNotNull(view.history)
         val forkedAuthors = history.authorForks()
         val allowed = linkedMapOf<CiphertextObjectKey, MutableSet<CiphertextDescriptor>>()
+        val blobs = linkedMapOf<CiphertextObjectMetadata, MutableList<SyncEnvelopeBlobBinding>>()
         fun allow(key: CiphertextObjectKey, descriptor: CiphertextDescriptor) { allowed.getOrPut(key) { linkedSetOf() } += descriptor }
         allow(vault.key, vaultDescriptor)
         view.observations.forEach { observation ->
@@ -39,10 +48,36 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
             val version = requireNotNull(actual.envelope.version)
             if (history.contains(version.reference()) && version.author !in forkedAuthors) {
                 allow(actual.metadata.key, actual.metadata.descriptor)
-                actual.envelope.blobs.values.forEach { allow(it.key, it.descriptor) }
+                val referenced = version.changes.values.flatMapTo(linkedSetOf()) { listOfNotNull(it.content, it.membership) }
+                referenced += resources[version.reference()].orEmpty()
+                referenced.forEach { identity ->
+                    val binding = actual.envelope.blobs[identity.sha256]
+                    if (binding?.plaintext == identity) {
+                        allow(binding.key, binding.descriptor)
+                        blobs.getOrPut(CiphertextObjectMetadata(binding.key, binding.descriptor)) { mutableListOf() } += binding
+                    }
+                }
             }
         }
-        return allowed.mapValues { it.value.toSet() }.also { recoveredReads = view to it }
+        return RecoveredReads(allowed.mapValues { it.value.toSet() }, blobs.mapValues { it.value.distinct() })
+            .also { recoveredReads = ReadCache(view, resources, it) }
+    }
+    private fun verifyPeerBlob(checkpoint: SyncVersionRef, metadata: CiphertextObjectMetadata): Boolean {
+        if (metadata.key == vault.key && metadata.descriptor == vaultDescriptor) return true
+        val bindings = recoveredReadScope(checkpoint).blobs[metadata].orEmpty()
+        return bindings.any { binding ->
+            val key = custody.key(binding.epoch)
+            val proof = LanSyncGroupTargetRawCheck(trust.group, binding.epoch, key.keyCommitment(), metadata, binding.plaintext)
+            if (proof !in verifiedPeerBlobs) {
+                try { SyncGroupBlobStore(trust.group, peerProofWork).read(reader.cachedOnly(), key, binding, binding.plaintext).use { } }
+                catch (failure: IllegalArgumentException) {
+                    if (failure.message?.startsWith("SYNC_") == true) return@any false
+                    throw failure
+                }
+                verifiedPeerBlobs += proof
+            }
+            true
+        }
     }
     fun ledger() = custody.ledger()
     internal fun requiresRecoveryProtocol(group: SyncStoreId): Boolean {
@@ -120,8 +155,9 @@ class LanSyncGroupRuntimeAccess internal constructor(val trust: SyncGroupTrust, 
     }
     fun peerStore(group: SyncStoreId, localCertificate: String, peerCertificate: String): LanSyncGroupPeerStore {
         require(group == trust.group && localCertificate == certificate) { "SYNC_GROUP_RUNTIME_TLS_IDENTITY" }
-        val scope = if (requiresRecoveryProtocol(group)) ::recoveredReadScope else null
-        return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader, scope, ::notice)
+        if (!requiresRecoveryProtocol(group)) return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader, ::notice)
+        return LanSyncGroupPeerStore(trust, localCertificate, peerCertificate, custody::ledger, reader,
+            { checkpoint -> recoveredReadScope(checkpoint).objects }, ::verifyPeerBlob, ::notice)
     }
     @Synchronized private fun notice(device: String): SyncLedgerNoticeEntry? {
         val checkpoint = ledger().current().reference()
