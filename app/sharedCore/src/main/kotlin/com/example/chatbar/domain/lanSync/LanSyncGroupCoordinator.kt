@@ -16,6 +16,7 @@ import kotlinx.coroutines.sync.withPermit
 
 private val reprepareJoinStages = setOf(LanSyncGroupJoinStage.KEYS_ADMITTED, LanSyncGroupJoinStage.NATIVE_ENROLLED)
 private const val joiningLedgerConflictText = "原设备组的签名账本存在冲突。已保留本机身份和资料。请让邀请设备核对原组，再重新核对此申请。"
+private const val refreshJoiningInvitationText = "请对方生成同组新邀请，再选择「更新邀请并继续」。"
 private val localMaintenanceCodes = setOf("SYNC_BACKGROUND_WORK_BUSY", "SYNC_MAINTENANCE")
 private val resumableJoinRouteWaits = setOf("SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING", "SYNC_GROUP_BOOTSTRAP_LEDGER_INCOMPLETE",
     "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING", "SYNC_GROUP_JOIN_KNOWN_CHECKPOINT_MISSING",
@@ -399,11 +400,11 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
                     canArchiveRevokedJoin = joined.canArchiveRevoked, joiningLedgerConflict = joined.ledgerConflict,
                     status = if (joined.ledgerConflict) joiningLedgerConflictText
                     else if (recovery) "恢复进度已保留，可从网盘或加密文件入口接续"
-                    else if (paused && pendingJoinProof == actionGeneration.get()) "邀请已核对，等待同步服务就绪后发送证明"
                     else if (joined.membershipRevoked) "原组已撤销此设备，已保留本机资料"
                     else if (joined.membershipVerified) "已核对批准，可继续查收接续所需资料"
-                    else if (joined.canAbandon) "本机尚未发送加入证明，可重试或放弃本次申请"
-                    else "原设备身份已保留，可继续查收批准") }
+                    else if (!joined.invitationExpired && paused && pendingJoinProof == actionGeneration.get())
+                        "邀请已核对，等待同步服务就绪后发送证明"
+                    else unverifiedJoinStatus(joined)) }
                 if (!recovery) startLoop()
             } else {
                 val shelved = member().shelvedInvitations()
@@ -620,6 +621,19 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             canRefreshJoinPreparation = !profile.ledgerConflict && profile.stage in reprepareJoinStages,
             joiningLedgerConflict = profile.ledgerConflict, status = if (profile.ledgerConflict) joiningLedgerConflictText else status)
     }
+    private fun unverifiedJoinStatus(profile: LanSyncGroupJoiningProfile): String = when {
+        profile.invitationExpired -> {
+            val checkApproval = if (profile.canAbandon) "" else "仍可查收签名批准。"
+            "按本机时间，原邀请已到期。原设备身份已保留。$checkApproval$refreshJoiningInvitationText"
+        }
+        profile.stage == LanSyncGroupJoinStage.WAITING_FOR_APPROVAL ->
+            "已发送证明，正在查收批准。若邀请方已退出，请对方重新打开设备组。若原邀请已关闭，$refreshJoiningInvitationText"
+        profile.stage == LanSyncGroupJoinStage.PROOF_ATTEMPTED ->
+            "正在核对证明是否送达，原设备身份已保留。若邀请方已退出，请对方重新打开设备组。若原邀请已关闭，$refreshJoiningInvitationText"
+        profile.canAbandon ->
+            "本机尚未发送加入证明，可重试或放弃本次申请。若对方已退出或关闭邀请，$refreshJoiningInvitationText"
+        else -> "原设备身份已保留，可继续查收批准"
+    }
     override fun retryJoin() = action("继续加入") { attemptJoin() }
     override fun refreshJoinPreparation() = action("重新核对加入资料") { member().refreshPreparation(); attemptJoin() }
     private suspend fun prove(owner: LanSyncGroupJoining) = owner.proveUsing(deviceName, joiningNetwork)
@@ -642,15 +656,16 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             !profile.membershipVerified) {
             try {
                 prove(owner)
-                mutableState.update { it.copy(error = null, status = "加入证明已发送，等待对方核对本机指纹并批准") }
+                mutableState.update { it.copy(error = null,
+                    status = unverifiedJoinStatus(profile.copy(stage = LanSyncGroupJoinStage.WAITING_FOR_APPROVAL, canAbandon = false))) }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 val problem = joinTransportFailure(error)
                 proofProblem = problem
                 val retained = requireNotNull(owner.profile())
                 if (retained.stage == LanSyncGroupJoinStage.PREPARED) {
-                    failure("加入证明", problem)
-                    mutableState.update { it.copy(canAbandonJoin = retained.canAbandon, status = "加入证明尚未发送") }
+                    if (problem.message != "SYNC_GROUP_INVITE_EXPIRED" || !retained.invitationExpired) failure("加入证明", problem)
+                    showJoining(retained, unverifiedJoinStatus(retained))
                     return
                 }
             }
@@ -665,21 +680,24 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
             val waiting = retained?.stage == LanSyncGroupJoinStage.WAITING_FOR_APPROVAL && !retained.membershipVerified
             val uncertain = retained?.stage == LanSyncGroupJoinStage.PROOF_ATTEMPTED && !retained.membershipVerified
             val approvalGate = (waiting || uncertain) && isAmbiguousJoinConnection(classified)
+            val offlineConflict = retained?.ledgerConflict == true && isAmbiguousJoinConnection(classified)
             mutableState.update { it.copy(canRefreshJoinPreparation = retained?.ledgerConflict != true && retained?.stage in reprepareJoinStages,
                 canShelveJoin = retained?.canShelve == true, canArchiveRevokedJoin = retained?.canArchiveRevoked == true,
                 joiningLedgerConflict = retained?.ledgerConflict == true,
-                error = if (approvalGate) null else it.error,
+                error = if (approvalGate || offlineConflict) null else it.error,
                 status = when {
                     retained?.ledgerConflict == true -> joiningLedgerConflictText
                     retained?.membershipRevoked == true -> "原组已撤销此设备，已保留本机资料"
                     retained?.membershipVerified == true -> "已核对批准，正在等待可达的设备或接续资料"
-                    waiting -> "已发送证明，等待对方批准或设备重新连通"
-                    uncertain -> "证明送达结果待核对，已保留设备身份"
+                    waiting || uncertain -> unverifiedJoinStatus(requireNotNull(retained))
                     else -> it.status
                 }) }
             // The normal store deliberately rejects TLS clients until the operator admits them.
+            if (offlineConflict) return
             if (approvalGate) {
-                proofProblem?.takeUnless(::isAmbiguousJoinConnection)?.let { failure("加入证明", it) }
+                proofProblem?.takeUnless { isAmbiguousJoinConnection(it) ||
+                    it.message == "SYNC_GROUP_INVITE_EXPIRED" && retained?.invitationExpired == true }
+                    ?.let { failure("加入证明", it) }
                 return
             }
             throw classified
@@ -687,13 +705,14 @@ class LanSyncGroupCoordinator(private val hasExistingEvidence: () -> Boolean,
         if (result.profile.stage == LanSyncGroupJoinStage.READY) attach(requireNotNull(owner.runtimeAccess()))
         else {
             val status = when (result.waitingCode) {
-                "SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING" -> "尚未收到主端批准，请让对方核对本机指纹"
+                "SYNC_GROUP_BOOTSTRAP_MEMBERSHIP_MISSING" -> if (result.profile.membershipVerified)
+                    "已核对批准，正在等待可达的设备或接续资料" else unverifiedJoinStatus(result.profile)
                 "SYNC_GROUP_BOOTSTRAP_HISTORICAL_KEY_MISSING", "SYNC_GROUP_JOIN_INITIAL_DATA_MISSING" -> "已核对批准，等待原组所需的密钥或资料"
                 "SYNC_GROUP_JOIN_PRESET_REVIEW_REQUIRED" -> "已核对批准，需要原组先核对冲突的预设"
                 "SYNC_KEY_DELIVERY_RECIPIENT_REVOKED" -> "原组已撤销此设备，已保留本机资料"
                 "SYNC_GROUP_BOOTSTRAP_LEDGER_CONFLICT" -> joiningLedgerConflictText
                 else -> if (result.profile.membershipVerified) "已核对批准，等待接续资料"
-                    else "尚未读到可核验的批准账本"
+                    else unverifiedJoinStatus(result.profile)
             }
             mutableState.update { it.copy(error = null, status = status, joiningLedgerConflict = result.profile.ledgerConflict,
                 canRefreshJoinPreparation = !result.profile.ledgerConflict && result.profile.stage in reprepareJoinStages,

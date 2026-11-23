@@ -855,6 +855,80 @@ class LanSyncGroupCoordinatorTest {
         }
     }
 
+    @Test fun inviterExitAndExpiredReplacementKeepTheSameApplicationAndAcceptLaterSignedApproval() = fixture { f ->
+        val firstInviter = readyCoordinator(f)
+        val code = requireNotNull(f.recoveryCode)
+        suspend fun issue(coordinator: LanSyncGroupCoordinator): LanSyncGroupInviteOffer {
+            coordinator.unlockManagement(code)
+            await { !coordinator.state.value.busy && coordinator.state.value.managementCanInvite }
+            coordinator.createInvitation()
+            await { !coordinator.state.value.busy && coordinator.state.value.invitation != null }
+            return requireNotNull(coordinator.state.value.invitation)
+        }
+
+        val firstOffer = issue(firstInviter)
+        val parent = Files.createDirectory(f.root.resolve("joining-client-profile"))
+        val data = Files.createDirectory(f.root.resolve("joining-client-data"))
+        val workspace = LanSyncWorkspace(data, Files.createDirectory(f.root.resolve("joining-client-workspace")), { Path.of(it) })
+        val identity = LanSyncTlsIdentity.create()
+        val clockOffset = AtomicLong()
+        fun joining() = LanSyncGroupJoining(parent, workspace, f.platform, identity, { it.reversedArray() },
+            { it.reversedArray() }, { _, _, _ -> }, wallTime = { System.currentTimeMillis() + clockOffset.get() })
+        fun member() = LanSyncGroupCoordinator({ Files.isRegularFile(parent.resolve("joining/profile.protected")) },
+            { LanSyncGroupEnrollment(parent, workspace, f.platform, identity, { it.reversedArray() }, { it.reversedArray() }, { _, _, _ -> }) },
+            ::joining, f.network, "synthetic joining device")
+        fun control() = lanSyncJson.parseToJsonElement(Files.readAllBytes(parent.resolve("joining/profile.protected"))
+            .reversedArray().toString(Charsets.UTF_8)).jsonObject
+        val firstRecipient = member()
+        try {
+            firstRecipient.beginJoin(firstOffer.code())
+            await { !firstRecipient.state.value.busy && firstRecipient.state.value.status.contains("已发送证明") }
+            await { firstInviter.state.value.peerConfirmation?.fingerprint == identity.fingerprint }
+            val original = control()
+            val keyFile = parent.resolve("joining/recipient/recipient.protected")
+            val originalKey = Files.readAllBytes(keyFile)
+
+            firstInviter.closeAndDrain()
+            assertFalse(f.custody(firstOffer.trust).ledger().current().members.containsKey(identity.fingerprint))
+            clockOffset.set(240_000)
+            firstRecipient.retryJoin()
+            await { !firstRecipient.state.value.busy && firstRecipient.state.value.status.contains("原邀请已到期") }
+            assertTrue(firstRecipient.state.value.status.contains("更新邀请并继续"))
+            assertFalse(firstRecipient.state.value.canAbandonJoin)
+            firstRecipient.closeAndDrain()
+
+            val reopenedMember = member()
+            try {
+                reopenedMember.open()
+                await { !reopenedMember.state.value.busy && reopenedMember.state.value.stage == LanSyncGroupPanelStage.JOINING }
+                assertEquals(identity.fingerprint, reopenedMember.state.value.joiningDevice)
+                assertTrue(reopenedMember.state.value.status.contains("原邀请已到期"))
+                assertEquals(original, control())
+
+                val reopenedInviter = f.coordinator()
+                reopenedInviter.open()
+                await { !reopenedInviter.state.value.busy && reopenedInviter.state.value.stage == LanSyncGroupPanelStage.READY }
+                assertNull(reopenedInviter.state.value.peerConfirmation)
+                clockOffset.set(0)
+                val replacement = issue(reopenedInviter)
+                reopenedMember.beginJoin(replacement.code())
+                await { !reopenedMember.state.value.busy && reopenedInviter.state.value.peerConfirmation?.fingerprint == identity.fingerprint }
+                assertEquals(original.getValue("operation"), control().getValue("operation"))
+                assertEquals(original.getValue("recipient"), control().getValue("recipient"))
+                assertContentEquals(originalKey, Files.readAllBytes(keyFile))
+
+                clockOffset.set(240_000)
+                reopenedMember.retryJoin()
+                await { !reopenedMember.state.value.busy && reopenedMember.state.value.status.contains("原邀请已到期") }
+                reopenedInviter.acceptPeer(requireNotNull(reopenedInviter.state.value.peerConfirmation).binding)
+                await { !reopenedInviter.state.value.busy && reopenedInviter.state.value.devices.any { it.id == identity.fingerprint } }
+                reopenedMember.retryJoin()
+                await { !reopenedMember.state.value.busy && reopenedMember.state.value.stage == LanSyncGroupPanelStage.READY }
+                assertContentEquals(originalKey, Files.readAllBytes(keyFile))
+            } finally { reopenedMember.closeAndDrain() }
+        } finally { firstRecipient.closeAndDrain() }
+    }
+
     @Test fun fileBindingSurvivesVisibilityLossAndCannotWriteAfterCancellation() = fixture { f ->
         val coordinator = readyCoordinator(f)
         coordinator.unlockManagement(requireNotNull(f.recoveryCode))
