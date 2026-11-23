@@ -148,9 +148,7 @@ internal fun LanSyncGroupPanel(state: LanSyncGroupPanelState, actions: LanSyncGr
         }
         if (state.stage == LanSyncGroupPanelStage.PREPARED_LOCKED && state.canAbandonUnactivated)
             CbButton("放弃未完成的设置", actions::abandonUnusedSetup, enabled = !interactionBlocked, variant = ButtonVariant.Secondary)
-        if (state.recoveryJoining) {
-            CbText("网盘恢复进度已保留，请从上方的网盘恢复入口继续")
-        } else if (state.stage == LanSyncGroupPanelStage.JOINING) {
+        if (!state.recoveryJoining && state.stage == LanSyncGroupPanelStage.JOINING) {
             state.joiningDevice?.let { CbText("本机设备指纹，请与邀请设备上的身份逐字核对\n$it") }
             if (state.canArchiveRevokedJoin) CbButton("结束并归档已撤销的申请", actions::archiveRevokedJoin, enabled = !interactionBlocked)
             else CbButton(if (state.joiningLedgerConflict) "重新核对原申请" else "继续加入", actions::retryJoin,

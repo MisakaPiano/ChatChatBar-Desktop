@@ -2,8 +2,12 @@ package com.example.chatbar.domain.lanSync
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.syncStore.*
 import com.example.chatbar.domain.syncStore.webdav.*
+import java.awt.image.BufferedImage
 import java.io.IOException
 import java.net.InetAddress
 import java.net.Proxy
@@ -21,6 +25,7 @@ import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
+import javax.imageio.ImageIO
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.*
@@ -170,7 +175,7 @@ class LanSyncGroupCloudRecoveryOwnerTest {
         }
         fun draft(secret: ByteArray) = LanSyncGroupCloudDraft("synthetic recovery", endpoint, username, secret, enabled = false)
         suspend fun seed() { original.seed() }
-        suspend fun publishCloud() {
+        suspend fun publishCloud(withPhoto: Boolean = false) {
             val access = requireNotNull(original.service.runtimeAccess())
             suspend fun scan() {
                 var cursor: CommitCursor? = null
@@ -182,7 +187,20 @@ class LanSyncGroupCloudRecoveryOwnerTest {
             LanSyncJsonFiles.write(card, CharacterCard.serializer(), CharacterCard("card", "synthetic owner recovery body",
                 basicSetting = "retained original body", createdAt = 1, updatedAt = 1))
             originalBytes = Files.readAllBytes(card)
-            source = access.node.commit(access.node.inspect().review(setOf("character_cards/card")))
+            val units = linkedSetOf("character_cards/card")
+            if (withPhoto) {
+                val image = Files.createDirectory(original.data.resolve("images")).resolve("resume.png")
+                val raster = BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB)
+                try { assertTrue(ImageIO.write(raster, "png", image.toFile())) } finally { raster.flush() }
+                val session = Files.createDirectories(original.data.resolve("entities/chat_sessions")).resolve("resume.json")
+                LanSyncJsonFiles.write(session, ChatSession.serializer(), ChatSession("resume", "card", "合成恢复会话",
+                    createdAt = 1, updatedAt = 1))
+                val message = Files.createDirectories(original.data.resolve("entities/chat_messages")).resolve("resume_photo.json")
+                LanSyncJsonFiles.write(message, ChatMessage.serializer(), ChatMessage("photo", "resume", MessageRole.USER,
+                    "合成图片随消息接续", images = listOf(image.toString()), createdAt = 2, updatedAt = 2))
+                units += "conversation/resume"
+            }
+            source = access.node.commit(access.node.inspect().review(units))
             access.node.upload(source.entry.request.operation, access.replica, access.localTarget); scan()
             access.targetPublication(directory("seed-target"), SyncDeliveryTarget(SyncDeliveryKind.CLOUD_STORE, shared.route)).upload(parts)
             originalLedger = original.custody().ledger().current()
@@ -677,6 +695,56 @@ class LanSyncGroupCloudRecoveryOwnerTest {
             { it.reversedArray() }, { it.reversedArray() })
         assertEquals(0L, author.state().committedSequence)
         assertEquals(review.device, access.device)
+    }
+
+    @Test fun aReadyRecoveryTemporarilyReopensTheVerifiedCloudAndFetchesAnAttachmentWithoutSavingTheConnection() = fixture(https = true) { f ->
+        f.publishCloud(withPhoto = true)
+        val originalImage = Files.readAllBytes(f.original.data.resolve("images/resume.png"))
+        val photo = f.source.metadata.envelope.blobs.getValue(lanSyncHash(originalImage)).key
+        val blockPhoto = AtomicBoolean(true)
+        val reads = AtomicInteger(); val writes = AtomicInteger()
+        f.shared.dav.overrideRequest = { request ->
+            if (request.method in setOf("PUT", "DELETE", "MKCOL", "MOVE")) writes.incrementAndGet()
+            if (request.requestUrl?.encodedPath?.contains("/${photo.id.value}/") == true) {
+                reads.incrementAndGet()
+                if (blockPhoto.get()) MockResponse().setResponseCode(404) else null
+            } else null
+        }
+        val first = f.owner(); val reviewed = prepareReview(f, first)
+        first.confirm(reviewed.binding)
+        withTimeout(30_000) { first.drain() }
+        val admitted = withTimeout(5_000) { f.ready.await() }
+        assertTrue(first.state.value.complete); assertTrue(reads.get() > 0)
+        assertTrue(admitted.node.inspectLocal().hasMissingResources)
+        val message = f.dailyData.resolve("entities/chat_messages/resume_photo.json")
+        assertFalse(Files.exists(message))
+        assertTrue(admitted.cloudRoutes().rows().isEmpty())
+        val management = managementState(f)
+        val checkpoint = admitted.ledger().current().reference()
+        first.closeAndDrain()
+
+        blockPhoto.set(false)
+        val previousReads = reads.get(); val requestsBeforeReview = f.recoveryRequests
+        val reopened = CompletableDeferred<LanSyncGroupRuntimeAccess>()
+        val second = f.owner(afterReady = { reopened.complete(it) })
+        val resumed = prepareReview(f, second, expectFreshDaily = false)
+        assertEquals(reviewed.device, resumed.device)
+        assertEquals(requestsBeforeReview, f.recoveryRequests)
+        second.confirm(resumed.binding, saveConnection = false)
+        withTimeout(30_000) { second.drain() }
+        assertTrue(second.state.value.complete, second.state.value.error)
+        val access = withTimeout(5_000) { reopened.await() }
+        assertTrue(reads.get() > previousReads)
+        assertEquals(reviewed.device, access.device)
+        assertEquals(checkpoint, access.ledger().current().reference()); assertEquals(management, managementState(f))
+        assertEquals(0, writes.get()); assertTrue(access.cloudRoutes().rows().isEmpty())
+        val restored = requireNotNull(LanSyncJsonFiles.read(message, ChatMessage.serializer()))
+        assertEquals("合成图片随消息接续", restored.content)
+        assertContentEquals(originalImage, Files.readAllBytes(Path.of(restored.images.single())))
+        assertTrue(access.node.sourceOperations().isEmpty())
+        val after = f.recoveryRequests
+        assertFalse(access.node.inspect().hasMissingResources)
+        assertEquals(after, f.recoveryRequests)
     }
 
     @Test fun coordinatorReadyLoadKeepsTheInterruptedExternalRecoveryEntryAndExplicitConfirmationFinishesIt() = fixture(https = true) { f ->

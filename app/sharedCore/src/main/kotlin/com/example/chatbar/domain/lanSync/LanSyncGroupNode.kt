@@ -24,6 +24,7 @@ class LanSyncGroupNodeView internal constructor(val stage: LanSyncGroupNodeStage
     val needsDependencyFetch: Boolean get() = dependencies.values.any { it.stage in setOf(
         LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE, LanSyncGroupDependencyStage.WAITING_FOR_KEY,
         LanSyncGroupDependencyStage.RECORD_MEMBERSHIP_AVAILABLE, LanSyncGroupDependencyStage.RECONCILE_AGAIN) }
+    internal val hasMissingResources: Boolean get() = dependencies.values.any { it.stage == LanSyncGroupDependencyStage.WAITING_FOR_RESOURCE }
     fun review(selected: Set<String>): LanSyncGroupSourceReview {
         require(selected.intersect(reservedUnits).isEmpty()) { "SYNC_GROUP_RESOLUTION_RESERVED" }
         return sourceReview(selected)

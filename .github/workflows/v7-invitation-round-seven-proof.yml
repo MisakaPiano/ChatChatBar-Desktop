@@ -25,17 +25,20 @@ jobs:
         with:
           packages: platform-tools platforms;android-36 build-tools;36.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - name: Verify isolated local photo failures and independent delivery
+      - name: Verify local photo isolation and authenticated recovery continuation
         working-directory: app
         run: |
           bash ./gradlew :sharedCore:test \
             --tests '*LanSyncGroupNodeTest.aMissingOwnedMessagePhotoHoldsOnlyItsRealMediaComponentAcrossSignedUpdatesAndColdReopen' \
             --tests '*LanSyncGroupNodeTest.aTruncatedOwnedPngRetainsItsOriginalRecordWithoutBlockingAnIndependentPublish' \
             --tests '*LanSyncWorkspaceTest.onlyConfirmedOwnedMissingMessageImagesAreIsolated' \
+            --tests '*LanSyncGroupCloudRecoveryOwnerTest.aReadyRecoveryTemporarilyReopensTheVerifiedCloudAndFetchesAnAttachmentWithoutSavingTheConnection' \
+            --tests '*LanSyncGroupCloudRecoveryOwnerTest.coldReadyRetryFinishesNativeDataAndReconfirmsConnectionWithoutAnotherRootSignature' \
+            --tests '*LanSyncGroupCloudRecoveryOwnerTest.coordinatorReadyLoadKeepsTheInterruptedExternalRecoveryEntryAndExplicitConfirmationFinishesIt' \
             -PlanSyncPreviewSeries=next -PlanSyncPreviewCode=87 -Pkotlin.daemon.jvmargs=-Xmx4g \
             --no-daemon --max-workers=1 --no-parallel --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v7-r07-local-photo-isolation
+          name: v7-r07-local-photo-and-cloud-continuation
           path: app/sharedCore/build/test-results/test/TEST-*.xml

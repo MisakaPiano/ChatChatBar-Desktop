@@ -314,14 +314,22 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         var profile = daily.profile()
         val known = daily.recoveryAnchor()
         require(profile == null || known != null) { "SYNC_GROUP_CLOUD_RECOVERY_OTHER_JOIN_EXISTS" }
+        val code = value.input.code()
         if (profile?.stage == LanSyncGroupJoinStage.READY) {
-            require(requireNotNull(known).vault == SyncManagementSession.locate(value.input.code())) { "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED" }
+            require(requireNotNull(known).vault == SyncManagementSession.locate(code)) { "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED" }
             val access = requireNotNull(daily.runtimeAccess())
             val current = access.ledger().current()
             require(current.members[access.device]?.active == true && access.trust.group == known.trust.group &&
                 access.trust.genesis == known.trust.genesis && access.trust.ownerCertificate == known.trust.ownerCertificate) {
                 "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED"
             }
+            val encrypted = daily.encryptedManagementBackup().bytes()
+            try {
+                SyncManagementSession.open(code, encrypted).use { unlocked ->
+                    require(unlocked.trust.group == known.trust.group && unlocked.trust.genesis == known.trust.genesis &&
+                        unlocked.trust.ownerCertificate == known.trust.ownerCertificate) { "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED" }
+                }
+            } finally { encrypted.fill(0); value.input.clearCode() }
             value.readyAccess = access
             val review = LanSyncGroupCloudRecoveryReview(lanSyncHash(
                 "CLOUD-RECOVERY-READY-RESUME\n${value.id.value}\n${current.reference()}\n${access.device}".toByteArray(Charsets.UTF_8)),
@@ -330,33 +338,10 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
             value.review = review
             return Result.Review(review, resumed = true)
         }
-        val base = runInterruptible(Dispatchers.IO) { checkSession(value); root().also { lanSyncSafe(it, true) } }
-        value.root = base
-        val read = runInterruptible(Dispatchers.IO) { Files.createDirectory(base.resolve("read-${value.id.value}")) }
-        val client = own(value, clientProvider(), { if (ownsClient) closeClient(it) }) { value.client = it }
-        val transport = own(value, WebDavHttpTransport(value.input.credentials.endpoint.toHttpUrl(), client, {
-            checkSession(value)
-            value.input.credentials.withPassword { password ->
-                if (value.input.credentials.username.isEmpty() && password.isEmpty()) null
-                else Credentials.basic(value.input.credentials.username, password.toString(Charsets.UTF_8), Charsets.UTF_8)
-            }
-        }, endpointPolicy), WebDavHttpTransport::close) { value.transport = it }
-        fun directory(name: String) = Files.createDirectory(read.resolve(name))
-        val source = runInterruptible(Dispatchers.IO) {
-            checkSession(value)
-            val whole = WeakWebDavAttemptStore(transport, directory("whole"), value.input.credentials.id)
-            val parts = WeakWebDavChunkAssembly(transport, directory("parts"), value.input.credentials.id)
-            val hint = SyncManagementSession.locate(value.input.code())
-            val cacheScope = lanSyncGroupIncomingScope(hint.group, hint.genesis, value.input.credentials.endpoint, value.input.credentials.username)
-            val cacheHome = base.resolve("incoming-cache")
-            if (!Files.exists(cacheHome, NOFOLLOW_LINKS)) Files.createDirectory(cacheHome)
-            lanSyncSafe(cacheHome, true)
-            val incoming = WeakWebDavIncomingChunkCache(cacheHome.resolve(cacheScope), cacheScope)
-            own(value, LanSyncGroupCloudRecoverySource(directory("source"), whole, parts, { checkSession(value) }, incoming),
-                LanSyncGroupCloudRecoverySource::close) { value.source = it }
-        }
+        val source = openTemporarySource(value, SyncManagementSession.locate(code))
+        val base = requireNotNull(value.root)
         val vault = runInterruptible(Dispatchers.IO) {
-            own(value, source.prepare(value.input.code()), LanSyncGroupCloudRecoveryPreview::close) { value.vault = it }
+            own(value, source.prepare(code), LanSyncGroupCloudRecoveryPreview::close) { value.vault = it }
         }
         known?.let { requireSame(it, vault) }
         val management = runInterruptible(Dispatchers.IO) {
@@ -369,12 +354,12 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         }
         try {
             if (Files.exists(base.resolve("management/profile.protected"), NOFOLLOW_LINKS)) {
-                source.withBackend { management.resumeImport(value.input.code(), it) }
+                source.withBackend { management.resumeImport(code, it) }
                 checkSession(value)
                 management.resumeAdministration()
                 val local = management.recoveryBootstrap()
                 source.withControl(vault, local) { management.refresh(it) }
-            } else source.recover(vault, value.input.code(), management, LanSyncManagementRecoveryAdmission { trust ->
+            } else source.recover(vault, code, management, LanSyncManagementRecoveryAdmission { trust ->
                 checkSession(value); require(trust == vault.trust) { "SYNC_GROUP_CLOUD_RECOVERY_TRUST_CHANGED" }
             })
         } finally { value.input.clearCode() }
@@ -401,13 +386,62 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
         return Result.Review(review, reused)
     }
 
+    private suspend fun openTemporarySource(value: Session, hint: SyncManagementVaultContext): LanSyncGroupCloudRecoverySource {
+        val base = runInterruptible(Dispatchers.IO) { checkSession(value); root().also { lanSyncSafe(it, true) } }
+        value.root = base
+        val read = runInterruptible(Dispatchers.IO) { Files.createDirectory(base.resolve("read-${value.id.value}")) }
+        val client = own(value, clientProvider(), { if (ownsClient) closeClient(it) }) { value.client = it }
+        val transport = own(value, WebDavHttpTransport(value.input.credentials.endpoint.toHttpUrl(), client, {
+            checkSession(value)
+            value.input.credentials.withPassword { password ->
+                if (value.input.credentials.username.isEmpty() && password.isEmpty()) null
+                else Credentials.basic(value.input.credentials.username, password.toString(Charsets.UTF_8), Charsets.UTF_8)
+            }
+        }, endpointPolicy), WebDavHttpTransport::close) { value.transport = it }
+        fun directory(name: String) = Files.createDirectory(read.resolve(name))
+        return runInterruptible(Dispatchers.IO) {
+            checkSession(value)
+            val whole = WeakWebDavAttemptStore(transport, directory("whole"), value.input.credentials.id)
+            val parts = WeakWebDavChunkAssembly(transport, directory("parts"), value.input.credentials.id)
+            val cacheScope = lanSyncGroupIncomingScope(hint.group, hint.genesis, value.input.credentials.endpoint, value.input.credentials.username)
+            val cacheHome = base.resolve("incoming-cache")
+            if (!Files.exists(cacheHome, NOFOLLOW_LINKS)) Files.createDirectory(cacheHome)
+            lanSyncSafe(cacheHome, true)
+            val incoming = WeakWebDavIncomingChunkCache(cacheHome.resolve(cacheScope), cacheScope)
+            own(value, LanSyncGroupCloudRecoverySource(directory("source"), whole, parts, { checkSession(value) }, incoming),
+                LanSyncGroupCloudRecoverySource::close) { value.source = it }
+        }
+    }
+
     private suspend fun confirmOwned(value: Session, binding: String): Result {
         checkSession(value)
         require(value.review?.binding == binding) { "SYNC_GROUP_CLOUD_RECOVERY_REVIEW_CHANGED" }
         value.readyAccess?.let { access ->
-            require(access.ledger().current().members[access.device]?.active == true) { "SYNC_GROUP_CLOUD_RECOVERY_DAILY_KEYS_CHANGED" }
+            val checkpoint = requireNotNull(value.review).checkpoint
+            fun requireConfirmedDevice() {
+                val current = access.ledger().current()
+                require(current.members[access.device]?.active == true && "${current.id.value}:${current.bodyHash()}" == checkpoint) {
+                    "SYNC_GROUP_CLOUD_RECOVERY_DAILY_KEYS_CHANGED"
+                }
+            }
+            requireConfirmedDevice()
             beginDataPhase(value, null)
-            return finishNative(value, access, access.node)
+            val local = access.node.inspectLocal()
+            if (!local.hasMissingResources) return finishNative(value, access, access.node, ::requireConfirmedDevice)
+            val anchor = requireNotNull(requireNotNull(value.daily).recoveryAnchor())
+            val source = openTemporarySource(value, anchor.vault)
+            return source.withBackend { backend ->
+                runInterruptible(Dispatchers.IO) {
+                    checkSession(value)
+                    lanSyncReadManagementBackup(backend, anchor.vault, anchor.vaultDescriptor)
+                    checkSession(value)
+                }
+                requireConfirmedDevice()
+                val routeId = "cloud:recovery:${value.id.value}"
+                access.reader.routes("cloudrecovery", listOf(LanSyncGroupReplicaReader.Route(routeId, backend)))
+                try { finishNative(value, access, access.node, ::requireConfirmedDevice) }
+                finally { access.reader.removeRoutes("cloudrecovery") }
+            }
         }
         val daily = requireNotNull(value.daily); val manager = requireNotNull(value.manager)
         val member = requireNotNull(daily.recoveryMember())
@@ -433,9 +467,11 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
             }
         }
     }
-    private suspend fun finishNative(value: Session, access: LanSyncGroupRuntimeAccess, node: LanSyncGroupNode): Result.Ready {
+    private suspend fun finishNative(value: Session, access: LanSyncGroupRuntimeAccess, node: LanSyncGroupNode,
+        requireConfirmedDevice: () -> Unit = {}): Result.Ready {
         val inspected = node.inspect()
-        inspected.plan?.let { checkSession(value); node.apply(it) }
+        checkSession(value); requireConfirmedDevice()
+        inspected.plan?.let { node.apply(it) }
         checkSession(value)
         val after = node.inspect()
         val pending = after.plan == null || after.plan.units.values.any {
@@ -507,7 +543,7 @@ class LanSyncGroupCloudRecoveryOwner private constructor(private val root: () ->
     private fun errorText(failure: Exception): String = when {
         failure.message in setOf("SYNC_GROUP_CLOUD_RECOVERY_NETWORK_NOT_ALLOWED", "SYNC_GROUP_CLOUD_RECOVERY_TRANSFER_NOT_STARTED") ->
             "请回到前台并允许本次网盘传输。"
-        failure.message == "SYNC_GROUP_CLOUD_RECOVERY_VAULT_UNAVAILABLE" ->
+        failure.message in setOf("SYNC_GROUP_CLOUD_RECOVERY_VAULT_UNAVAILABLE", "SYNC_GROUP_MANAGEMENT_BACKUP_MISSING", "SYNC_GROUP_MANAGEMENT_BACKUP_CHANGED") ->
             "未找到与恢复码相符的完整管理资料，请核对网盘目录和恢复码。"
         failure.message == "SYNC_GROUP_CLOUD_RECOVERY_OTHER_JOIN_EXISTS" ->
             "此设备已有其他加入进度，请先在同步页检查。"
