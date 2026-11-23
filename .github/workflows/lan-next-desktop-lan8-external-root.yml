@@ -1,0 +1,45 @@
+name: Exact Windows LAN7 to LAN8 upgrade with an existing custom data folder
+on:
+  push:
+    branches: ['codex/lan-next-sync-control-*']
+    paths:
+      - .github/workflows/lan-next-desktop-lan8-external-root.yml
+      - .github/lan-next-desktop-lan8-retained-upgrade-request.json
+      - tools/lan-next-control/prove_windows_external_root_upgrade.py
+permissions:
+  contents: read
+  actions: read
+jobs:
+  external-root:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Configure only the disposable checkout
+        shell: pwsh
+        run: |
+          git config --global core.longpaths true
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - name: Start the exact Windows packages using the original launcher and custom profile
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python -B tools/lan-next-control/prove_windows_external_root_upgrade.py
+          --run --control-root .
+          --request .github/lan-next-desktop-lan8-retained-upgrade-request.json
+          --build .github/lan-next-sync-desktop-lan8-build-request.json
+          --output desktop-lan8-external-root-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lan7-lan8-windows-custom-root-upgrade
+          path: desktop-lan8-external-root-evidence/external-root-upgrade-result.json
+          if-no-files-found: warn
+          retention-days: 7
