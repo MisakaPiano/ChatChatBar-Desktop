@@ -64,7 +64,7 @@ jobs:
           kt_name = "WindowsInvitationSaveDialogProofTest.kt"
           ps_name = "invoke-owned-invitation-save.ps1"
           kt_sha = "bf9d143e15fe1616182b56a3726413b0bff8630553022a26d07cc009685b7191"
-          ps_sha = "e4c7943d4dc64ad4301f165d3736cf786541be2053f4a33e2355b6f5caffe537"
+          ps_sha = "1551e2733f6569579c323843a8bb7aa3b740386e5be5f5f6a32353774e9ae12e"
           source_sha = os.environ["CCB_INVITE_DIALOG_SOURCE_SHA"]
           control_sha = os.environ["GITHUB_SHA"]
           runner = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
