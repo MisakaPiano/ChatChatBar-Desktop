@@ -30,7 +30,7 @@ object LanSyncHeifStill {
             boxes += box
             position = box.end
         }
-        val meta = boxes.onlyBox("meta")
+        val meta = boxes.singleOrNull { it.type == "meta" } ?: throw LanSyncInvalidImage()
         need(meta.length in 4L..MAX_METADATA.toLong())
         val cursor = file.bytes(meta.start, meta.length.toInt())
         need(cursor.u(4) == 0L)
@@ -226,7 +226,6 @@ object LanSyncHeifStill {
         need(width in 1L..262_144L && height in 1L..262_144L)
         return Dimensions(width.toInt(), height.toInt())
     }
-    private fun List<Box>.onlyBox(type: String) = requireValue(singleOrNull { it.type == type })
     private fun List<Child>.only(type: String) = requireValue(singleOrNull { it.type == type })
     private fun sum(a: Long, b: Long): Long { need(a <= Long.MAX_VALUE - b); return a + b }
     private fun <T : Any> requireValue(value: T?): T = value ?: invalid()

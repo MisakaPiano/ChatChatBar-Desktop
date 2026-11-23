@@ -428,9 +428,20 @@ class LanSyncGroupNodeTest {
         assertContentEquals(bytes, Files.readAllBytes(localImage))
     }
 
-    @Test fun aTruncatedOwnedPngRetainsItsOriginalRecordWithoutBlockingAnIndependentPublish() = withGroup { group ->
+    @Test fun aTruncatedOwnedPngRetainsItsOriginalRecordWithoutBlockingAnIndependentPublish() =
+        checkOwnedBadImageIsolation { it.copyOf(8) }
+
+    @Test fun anIncompleteRecognizedHeifRetainsTheImageAndLetsBothConversationsPublish() =
+        checkOwnedBadImageIsolation {
+            byteArrayOf(0, 0, 0, 20, 102, 116, 121, 112, 104, 101, 105, 99, 0, 0, 0, 0, 109, 105, 102, 49)
+        }
+
+    private fun checkOwnedBadImageIsolation(breakImage: (ByteArray) -> ByteArray) = withGroup { group ->
         val local = group.End(0); val peer = group.End(1)
-        local.resourceValidator = { kind, file, _ -> if (kind == "images") LanSyncRasterPolicy.checkPng(file, false) }
+        local.resourceValidator = { kind, file, _ -> if (kind == "images") {
+            LanSyncRasterPolicy.checkPng(file, false)
+            LanSyncHeifStill.inspect(file)
+        } }
         val sender = local.enroll(); val receiver = peer.enroll()
         val damaged = "conversation/damaged"; val independent = "conversation/independent"
         val image = Files.createDirectories(local.data.resolve("images")).resolve("owned.png")
@@ -451,7 +462,7 @@ class LanSyncGroupNodeTest {
         receiver.apply(requireNotNull(peer.scan(receiver).plan))
         val previous = sender.inspect().nativeState.units.getValue(damaged)
         val recordBytes = Files.readAllBytes(record)
-        val truncated = original.copyOf(8)
+        val truncated = breakImage(original)
         Files.write(image, truncated)
         assertEquals("SYNC_IMAGE_INVALID", assertFailsWith<IllegalArgumentException> {
             local.workspace.capture(group.identities[0].fingerprint).close()
@@ -477,11 +488,19 @@ class LanSyncGroupNodeTest {
         assertContentEquals(recordBytes, Files.readAllBytes(record))
         assertContentEquals(truncated, Files.readAllBytes(image))
         Files.write(image, original)
-        val repaired = local.open(workspaceOwner = local.openWorkspace()).inspect()
+        val reopened = local.open(workspaceOwner = local.openWorkspace())
+        val repaired = reopened.inspect()
         assertNotEquals(LanSyncGroupNativeStage.LOCAL_RESOURCE_BLOCKED, requireNotNull(repaired.plan).units.getValue(damaged).stage)
         assertEquals(previous, repaired.nativeState.units.getValue(damaged))
         assertContentEquals(recordBytes, Files.readAllBytes(record))
         assertContentEquals(original, Files.readAllBytes(image))
+        LanSyncJsonFiles.write(messages.resolve("damaged_repaired.json"), ChatMessage.serializer(),
+            ChatMessage("repaired", "damaged", MessageRole.USER, "原图修复后继续同步", createdAt = 4, updatedAt = 4))
+        val repairedCommit = reopened.commit(reopened.inspect().review(setOf(damaged)))
+        local.send(reopened, repairedCommit)
+        receiver.apply(requireNotNull(peer.scan(receiver).plan))
+        assertEquals("原图修复后继续同步", LanSyncJsonFiles.read(
+            peer.data.resolve("entities/chat_messages/damaged_repaired.json"), ChatMessage.serializer())?.content)
     }
 
     @Test fun signedConversationDeletionRetriesOnlyRepositoryReloadAcrossColdOpenAndSourceOnlyShutdown() = withGroup { g ->

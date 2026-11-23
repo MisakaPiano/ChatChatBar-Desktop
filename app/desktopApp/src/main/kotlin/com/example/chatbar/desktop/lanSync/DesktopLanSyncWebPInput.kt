@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.domain.lanSync.LanSyncInvalidImage
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Path
@@ -48,21 +49,21 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
                 val header = ByteArray(12).also(input::readFully); input.seek(0)
                 if (String(header, 0, 4, Charsets.US_ASCII) != "RIFF" || String(header, 8, 4, Charsets.US_ASCII) != "WEBP") return input
                 fun unsigned(bytes: ByteArray, offset: Int) = ByteBuffer.wrap(bytes, offset, 4).order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xffffffffL
-                require(unsigned(header, 4) == originalSize - 8) { "SYNC_IMAGE_INVALID" }
+                checkStructure(unsigned(header, 4) == originalSize - 8)
                 val parts = mutableListOf(Part(0, 12, 0, header)); var logicalSize = 12L; var position = 12L
                 var canvas: Pair<Long, Long>? = null
                 var metadataBytes = 0L
                 while (position < originalSize) {
-                    require(originalSize - position >= 8) { "SYNC_IMAGE_INVALID" }
+                    checkStructure(originalSize - position >= 8)
                     input.seek(position); val chunk = ByteArray(8).also(input::readFully)
                     val type = String(chunk, 0, 4, Charsets.US_ASCII); val length = unsigned(chunk, 4)
                     val physicalLength = 8 + length + (length and 1)
-                    require(physicalLength <= originalSize - position) { "SYNC_IMAGE_INVALID" }
+                    checkStructure(physicalLength <= originalSize - position)
                     if (type == "ICCP") {
-                        require(length >= 128) { "SYNC_IMAGE_INVALID" }
+                        checkStructure(length >= 128)
                         val profile = ByteArray(128).also(input::readFully)
                         val declared = ByteBuffer.wrap(profile).int.toLong() and 0xffffffffL
-                        require(declared in 128..length && String(profile, 36, 4, Charsets.US_ASCII) == "acsp") { "SYNC_IMAGE_INVALID" }
+                        checkStructure(declared in 128..length && String(profile, 36, 4, Charsets.US_ASCII) == "acsp")
                         if (renderColorMetadata) {
                             metadataBytes += length
                             require(metadataBytes <= METADATA_BYTES && declared <= METADATA_BYTES) { "SYNC_IMAGE_METADATA_WORKING_BUDGET" }
@@ -70,7 +71,7 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
                     }
                     var replacement: ByteArray? = null
                     if (type == "VP8X") {
-                        require(position == 12L && length == 10L) { "SYNC_IMAGE_INVALID" }
+                        checkStructure(position == 12L && length == 10L)
                         val body = ByteArray(10).also(input::readFully)
                         fun dimension(offset: Int) = 1L + (body[offset].toInt() and 255) + ((body[offset + 1].toInt() and 255) shl 8) + ((body[offset + 2].toInt() and 255) shl 16)
                         canvas = dimension(4) to dimension(7)
@@ -79,11 +80,11 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
                         replacement = chunk + body
                     }
                     if (type == "ANMF") {
-                        require(length >= 16) { "SYNC_IMAGE_INVALID" }
-                        val bounds = requireNotNull(canvas) { "SYNC_IMAGE_INVALID" }
+                        checkStructure(length >= 16)
+                        val bounds = canvas ?: throw LanSyncInvalidImage()
                         val frame = ByteArray(16).also(input::readFully)
                         fun value(offset: Int) = (frame[offset].toLong() and 255) + ((frame[offset + 1].toLong() and 255) shl 8) + ((frame[offset + 2].toLong() and 255) shl 16)
-                        require(value(0) * 2 + value(6) + 1 <= bounds.first && value(3) * 2 + value(9) + 1 <= bounds.second) { "SYNC_IMAGE_INVALID" }
+                        checkStructure(value(0) * 2 + value(6) + 1 <= bounds.first && value(3) * 2 + value(9) + 1 <= bounds.second)
                         require((value(6) + 1) * (value(9) + 1) <= maximumPixels) { "SYNC_IMAGE_INVALID" }
                     }
                     if (type !in setOf("EXIF", "XMP ") && (renderColorMetadata || type != "ICCP")) {
@@ -92,10 +93,14 @@ internal class DesktopLanSyncWebPInput private constructor(private val source: I
                     }
                     position += physicalLength
                 }
-                require(position == originalSize) { "SYNC_IMAGE_INVALID" }
+                checkStructure(position == originalSize)
                 ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN).putInt(4, (logicalSize - 8).toInt())
                 return DesktopLanSyncWebPInput(input, parts, logicalSize)
             } catch (failure: Throwable) { input.close(); throw failure }
+        }
+
+        private fun checkStructure(valid: Boolean) {
+            if (!valid) throw LanSyncInvalidImage()
         }
     }
 }

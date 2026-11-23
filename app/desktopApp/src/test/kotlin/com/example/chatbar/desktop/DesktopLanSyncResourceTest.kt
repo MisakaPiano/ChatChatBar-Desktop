@@ -16,6 +16,53 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopLanSyncResourceTest {
+    @Test fun malformedKnownWebpAndHeifAreHeldOnlyInTheOwningConversation(): Unit = runBlocking {
+        val root = Files.createTempDirectory("desktop-identified-damaged-chat-image-").toRealPath()
+        try {
+            val data = Files.createDirectory(root.resolve("data"))
+            val images = Files.createDirectory(data.resolve("images"))
+            val png = ByteArrayOutputStream().apply {
+                com.example.chatbar.domain.image.PrivacyPngEncoder.write(this, 16, 12) { _, pixels -> pixels.fill(0xff2359b4.toInt()) }
+            }.toByteArray()
+            val original = org.jetbrains.skia.Image.makeFromEncoded(png).use { image ->
+                requireNotNull(image.encodeToData(org.jetbrains.skia.EncodedImageFormat.WEBP, 100)).use { it.bytes }
+            }
+            val image = images.resolve("owned.webp")
+            Files.write(image, original)
+            val storage = JsonFileStorage(data)
+            for (id in listOf("has_image", "text_only")) {
+                storage.saveEntity("chat_sessions", id,
+                    ChatSession(id, "card", id, createdAt = 1, updatedAt = 1), ChatSession.serializer())
+            }
+            val owningMessage = ChatMessage("m", "has_image", MessageRole.USER, "保留原图",
+                images = listOf("images/owned.webp"), createdAt = 2, updatedAt = 2)
+            storage.saveEntity("chat_messages", "has_image_m", owningMessage, ChatMessage.serializer())
+            storage.saveEntity("chat_messages", "text_only_m",
+                ChatMessage("m", "text_only", MessageRole.USER, "独立文字", createdAt = 2, updatedAt = 2), ChatMessage.serializer())
+            val workspace = LanSyncWorkspace(data, Files.createDirectory(root.resolve("state")),
+                DesktopCharacterResourceStore(data)::resolveOwnedReference,
+                resourceReference = { _, path -> desktopLanSyncResourceReference(data, path) }, validateResource = ::validateDesktopLanSyncResource)
+            val originalHashes = workspace.captureGroup("desktop").use { it.snapshot.hashes() }
+            val malformed = listOf(original.copyOf(16),
+                byteArrayOf(0, 0, 0, 20, 102, 116, 121, 112, 104, 101, 105, 99, 0, 0, 0, 0, 109, 105, 102, 49))
+            for (broken in malformed) {
+                Files.write(image, broken)
+                assertFailsWith<LanSyncInvalidImage> { workspace.capture("desktop").close() }
+                workspace.captureGroup("desktop").use { capture ->
+                    assertEquals(setOf("conversation/has_image"), capture.blockedResourceUnits)
+                    assertEquals(originalHashes["conversation/text_only"], capture.snapshot.hashes()["conversation/text_only"])
+                }
+                assertContentEquals(broken, Files.readAllBytes(image))
+                assertEquals(owningMessage, storage.loadEntity("chat_messages", "has_image_m", ChatMessage.serializer()))
+            }
+            Files.write(image, original)
+            workspace.captureGroup("desktop").use {
+                assertTrue(it.blockedResourceUnits.isEmpty())
+                assertEquals(originalHashes, it.snapshot.hashes())
+            }
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
     @Test fun ordinary48MpJpegPreservesTheOriginalAndDoesNotBlockAnotherConversation(): Unit = runBlocking {
         val root = Files.createTempDirectory("lan-48mp-").toRealPath()
         try {
