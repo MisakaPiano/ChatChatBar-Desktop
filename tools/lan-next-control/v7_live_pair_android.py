@@ -13,6 +13,7 @@ import time
 import uuid
 
 from synthetic_clipboard import clipboard_control
+import v7_original86_ui_observation as group_observation
 
 SCAN_SHA='4ea5527a441b06d5fe5d6c4015c3aa4521a6d790c91bc5d798795851a926c568'
 SESSION='ccb-v7-lab-session'
@@ -91,7 +92,7 @@ def checkpoint(args,result):
         'phase','offerContractAccepted','joinFieldFocused','joinButtonPhysicalClicks',
         'joiningUiObserved','readyUiObserved','otherSyncErrorObserved',
         'expectedInvitationCountObserved','androidClipboard','exactMessageContentObserved',
-        'appOwnedImageSha256Matched','readbackPublished','submitControl')}
+        'appOwnedImageSha256Matched','readbackPublished','submitControl','groupUiObservation')}
     message['kind']='CCB_V7_ANDROID_LIVE_PROGRESS'
     with temp.open('x',encoding='utf-8',newline='\n') as stream:
         json.dump(message,stream,ensure_ascii=True)
@@ -349,9 +350,13 @@ def run_pairing(args,r,a,ui,clipboard,clipboard_result):
         lambda root:(resolve_invitation_target(None,'invitation',ui,root),scoped_invitation_count(root,ui)),r)
     r['joinButtonPhysicalClicks']=1;r['phase']='WAIT_JOIN_AND_AUTOMATIC_RECEIVE'
     checkpoint(args,r)
+    observation_started=time.monotonic();observer=group_observation.Observer()
+    r['groupUiObservation']=observer.summary()
     deadline=time.monotonic()+args.delivery_timeout
     while time.monotonic()<deadline:
         root=a.ui();s=ui.state(root);values=ui.labels(root)
+        group_observation.sample(a,observer,root,'BEFORE_READBACK',observation_started)
+        r['groupUiObservation']=observer.summary()
         if join_form_labels(root,ui) is not None:
             target=resolve_invitation_target(None,'invitation',ui,root)
             if clipboard_control.submit_field_cleared(target.text,target.mode,scoped_invitation_count(root,ui)) is True:
@@ -383,7 +388,12 @@ def run_pairing(args,r,a,ui,clipboard,clipboard_result):
         r['appOwnedImageSha256Matched']=True;r['imageBytes']=n
         # Publish only after values have been obtained from actual app storage.
         publish(args.readback,{'kind':'CCB_V7_ANDROID_READBACK','session':m['sessionId'],'message':m['id'],'text':m['content'],'imageSha256':actual,'received':True})
-        r['readbackPublished']=True;r['phase']='DONE';r['status']='EXPECTED_APP_MESSAGE_AND_IMAGE_OBSERVED';return
+        r['readbackPublished']=True;r['phase']='DONE';r['status']='EXPECTED_APP_MESSAGE_AND_IMAGE_OBSERVED'
+        observer.data=True
+        # Readback/ACK and data PASS above stay independent of this optional UI witness.
+        group_observation.after_readback(a,observer,observation_started)
+        r['groupUiObservation']=observer.summary()
+        return
     if r.get('submitControl',{}).get('productConsumed') is not True:
         r['submitControl']['productConsumed']=False
         raise Refused('JOIN_SUBMIT_CONSUMPTION_NOT_OBSERVED')

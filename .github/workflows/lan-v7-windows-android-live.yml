@@ -6,6 +6,8 @@ on:
       - .github/lan-v7-live-pair-request.json
       - .github/workflows/lan-v7-windows-android-live.yml
       - tools/lan-next-control/v7_live_pair_android.py
+      - tools/lan-next-control/v7_original86_ui_observation.py
+      - tools/lan-next-control/test_v7_original86_ui_observation.py
       - tools/lan-next-control/synthetic_clipboard/**
       - tools/lan-next-control/v7_windows_live_pair_control.py
       - tools/lan-next-control/fixtures/DesktopV7LiveSyntheticHostDraftTest.kt
@@ -25,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: MisakaPiano/ChatChatBar-Desktop
-          ref: bad4fc82ca3759a229a472858d270d93079600d9
+          ref: f7d8776606dd4dc03ef8f7f0c1dc3c30afd6f2ac
           path: v7-source
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -56,7 +58,7 @@ jobs:
       - name: Exercise one real private-network invitation in the fixed Windows runtime and delivered APK
         env:
           CCB_V7_LIVE_SYNTHETIC: 'true'
-          CCB_V7_SOURCE_SHA: bad4fc82ca3759a229a472858d270d93079600d9
+          CCB_V7_SOURCE_SHA: f7d8776606dd4dc03ef8f7f0c1dc3c30afd6f2ac
         working-directory: v7-control
         timeout-minutes: 32
         shell: pwsh
