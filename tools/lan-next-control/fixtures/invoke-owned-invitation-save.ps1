@@ -35,7 +35,9 @@ public static class CcbInviteDialogNative {
     [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr window);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr window, uint command);
-    [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr dialog, int id);
+    [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, EnumProc visit, IntPtr value);
+    [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr window);
+    [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr window, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr window, StringBuilder output, int count);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr window, StringBuilder output, int count);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
@@ -106,23 +108,96 @@ public static class CcbInviteDialogNative {
 
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 
-    # IDOK is Windows' standard affirmative control. This does not dismiss any confirmation popup.
-    $saveButton = [CcbInviteDialogNative]::GetDlgItem($dialog, 1)
-    if ($saveButton -eq [IntPtr]::Zero -or (Get-WindowProcess $saveButton) -ne $ExpectedProcessId -or
-        -not [CcbInviteDialogNative]::IsWindowEnabled($saveButton) -or -not [CcbInviteDialogNative]::IsWindowVisible($saveButton)) {
-        throw 'INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE'
-    }
-    $save = [System.Windows.Automation.AutomationElement]::FromHandle($saveButton)
-    $invoke = $null
-    if (-not $save.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref] $invoke)) {
-        throw 'INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE'
+    function Test-NativeSaveButton([IntPtr] $Window, [IntPtr] $Dialog) {
+        if ($Window -eq [IntPtr]::Zero -or [CcbInviteDialogNative]::GetDlgCtrlID($Window) -ne 1 -or
+            [CcbInviteDialogNative]::GetAncestor($Window, 2) -ne $Dialog -or
+            (Get-WindowProcess $Window) -ne $ExpectedProcessId -or
+            -not [CcbInviteDialogNative]::IsWindowEnabled($Window) -or
+            -not [CcbInviteDialogNative]::IsWindowVisible($Window)) { return $false }
+        $class = [Text.StringBuilder]::new(64)
+        [void] [CcbInviteDialogNative]::GetClassName($Window, $class, $class.Capacity)
+        return $class.ToString() -ceq 'Button'
     }
 
+    function Find-InvitationSaveControl([IntPtr] $Dialog) {
+        Assert-Owner
+        if (-not (Test-OwnedDialog $Dialog)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
+        if (-not [CcbInviteDialogNative]::IsWindowEnabled($Dialog)) { return }
+
+        $buttons = [Collections.Generic.List[IntPtr]]::new()
+        $visitButton = [CcbInviteDialogNative+EnumProc] {
+            param([IntPtr] $window, [IntPtr] $unused)
+            if (Test-NativeSaveButton $window $Dialog) { $buttons.Add($window) }
+            return $true
+        }
+        [void] [CcbInviteDialogNative]::EnumChildWindows($Dialog, $visitButton, [IntPtr]::Zero)
+        if ($buttons.Count -gt 1) { return }
+        if ($buttons.Count -eq 1) {
+            return [pscustomobject] @{ Key = "HWND:$($buttons[0].ToInt64())"; Native = $buttons[0]; Invoke = $null }
+        }
+
+        try {
+            $root = [System.Windows.Automation.AutomationElement]::FromHandle($Dialog)
+            $rootInfo = $root.Current
+            if ([IntPtr]::new([long] $rootInfo.NativeWindowHandle) -ne $Dialog -or
+                $rootInfo.ProcessId -ne $ExpectedProcessId) { return }
+            $id = [System.Windows.Automation.PropertyCondition]::new(
+                [System.Windows.Automation.AutomationElement]::AutomationIdProperty, '1')
+            $elements = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $id)
+            $button = $null
+            foreach ($element in $elements) {
+                $info = $element.Current
+                if ($info.AutomationId -cne '1' -or $info.ControlType -ne [System.Windows.Automation.ControlType]::Button -or
+                    $info.ProcessId -ne $ExpectedProcessId -or -not $info.IsEnabled -or $info.IsOffscreen) { continue }
+                $nativeHandle = [IntPtr]::new([long] $info.NativeWindowHandle)
+                if ($nativeHandle -ne [IntPtr]::Zero -and
+                    ([CcbInviteDialogNative]::GetAncestor($nativeHandle, 2) -ne $Dialog -or
+                    (Get-WindowProcess $nativeHandle) -ne $ExpectedProcessId)) { continue }
+                if ($null -ne $button) { return }
+                $button = $element
+            }
+            if ($null -eq $button) { return }
+            $invoke = $null
+            if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref] $invoke)) { return }
+            $runtimeId = $button.GetRuntimeId() -join ','
+            if (-not $runtimeId) { return }
+            return [pscustomobject] @{ Key = "UIA:$runtimeId"; Native = [IntPtr]::Zero; Invoke = $invoke }
+        } catch [System.Windows.Automation.ElementNotAvailableException] {
+            return
+        }
+    }
+
+    $buttonDeadline = [Diagnostics.Stopwatch]::StartNew()
+    $previousKey = $null
+    $save = $null
+    do {
+        $candidate = Find-InvitationSaveControl $dialog
+        if ($null -ne $candidate -and $candidate.Key -ceq $previousKey) {
+            $save = $candidate
+            break
+        }
+        $previousKey = if ($null -ne $candidate) { $candidate.Key } else { $null }
+        Start-Sleep -Milliseconds 100
+    } while ($buttonDeadline.Elapsed.TotalSeconds -lt 5)
+    if ($null -eq $save) { throw 'INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE' }
+
+    $currentSave = Find-InvitationSaveControl $dialog
     Assert-Owner
-    if (-not (Test-OwnedDialog $dialog) -or [CcbInviteDialogNative]::GetDlgItem($dialog, 1) -ne $saveButton -or
-        (Get-WindowProcess $saveButton) -ne $ExpectedProcessId -or -not [CcbInviteDialogNative]::IsWindowEnabled($saveButton) -or
-        -not [CcbInviteDialogNative]::IsWindowVisible($saveButton)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
-    $invoke.Invoke()
+    if ($null -eq $currentSave -or $currentSave.Key -cne $save.Key -or -not (Test-OwnedDialog $dialog) -or
+        -not [CcbInviteDialogNative]::IsWindowEnabled($dialog)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
+    if ($currentSave.Native -ne [IntPtr]::Zero) {
+        if (-not (Test-NativeSaveButton $currentSave.Native $dialog)) { throw 'INVITE_DIALOG_TARGET_CHANGED' }
+        # BM_CLICK dispatches only to the validated IDOK button.
+        if (-not [CcbInviteDialogNative]::PostMessage($currentSave.Native, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)) {
+            throw 'INVITE_DIALOG_SAVE_CONTROL_UNAVAILABLE'
+        }
+    } else {
+        try {
+            $currentSave.Invoke.Invoke()
+        } catch [System.Windows.Automation.ElementNotAvailableException] {
+            throw 'INVITE_DIALOG_TARGET_CHANGED'
+        }
+    }
     [Console]::WriteLine('INVITE_DIALOG_SAVE_INVOKED')
 } catch {
     $code = $_.Exception.Message
