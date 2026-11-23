@@ -40,8 +40,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/LanV7ReverseSyntheticWriterTest.kt",
-      "bytes": 32044,
-      "sha256": "db21f70b383ee8b592809ff8d04da8d0192352ebac1fcbf9f2c261251e2fcb68"
+      "bytes": 35396,
+      "sha256": "c53a88fd49d9717efb0e35b6e34eb6882def940a763bef57a58eb453345ab45e"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/README.md",
@@ -55,8 +55,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_reverse_android_control.py",
-      "bytes": 23549,
-      "sha256": "b65e31bf3717e221d2d1a5d785630d66ff5258910a40174546a2317889931324"
+      "bytes": 25139,
+      "sha256": "332157abe488ab70f50768cf78cfc870aaa90c0f90adf164911776da53562664"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/v7_windows_reverse_control.py",
@@ -70,8 +70,8 @@
     },
     {
       "path": "tools/lan-next-control/v7_reverse/test_reverse_isolated_route.py",
-      "bytes": 8839,
-      "sha256": "3ae59edd31d63060d0d97a9c1cba457a3c6d369d75d725cb9f1ee415c6b04747"
+      "bytes": 14183,
+      "sha256": "3104c461442058f12ed2d2de737e049066aca9416685fa6e738295f57125b875"
     },
     {
       "path": "tools/lan-next-control/v7_reverse/adb_observation.py",

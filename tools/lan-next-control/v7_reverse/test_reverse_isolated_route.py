@@ -146,4 +146,80 @@ class ReverseRouteContracts(unittest.TestCase):
             self.assertNotIn(forbidden,block)
 
 
+    def nearby(self):
+        return dict(availability='READABLE',statusClass='NOT_CONNECTED_PROJECTION',
+            loop=dict(present=True,active=True,completed=False,cancelled=False),
+            worker=dict(present=False,active=None,completed=None,cancelled=None),admissionLocked=False)
+
+    def test_nearby_optional_field_keeps_legacy_original_schema(self):
+        old=self.progress();got=android.safe_native_progress(json.dumps(old).encode())
+        self.assertEqual(got,old);self.assertNotIn('nearbyObservation',got)
+        old['nearbyObservation']=None
+        self.assertIsNone(android.safe_native_progress(json.dumps(old).encode())['nearbyObservation'])
+
+    def test_nearby_readable_preserves_absent_unknown_and_false(self):
+        value=self.progress();value['nearbyObservation']=self.nearby()
+        got=android.safe_native_progress(json.dumps(value).encode())['nearbyObservation']
+        self.assertFalse(got['worker']['present']);self.assertIsNone(got['worker']['active'])
+        self.assertFalse(got['admissionLocked']);self.assertTrue(got['loop']['active'])
+        self.assertEqual(got['statusClass'],'NOT_CONNECTED_PROJECTION')
+        self.assertLess(len(json.dumps(value).encode()),4096)
+
+    def test_nearby_job_properties_are_nontransactional_not_a_dead_worker_claim(self):
+        value=self.nearby();value['loop'].update(active=True,completed=True,cancelled=True)
+        android.safe_nearby_observation(value) # Sequential property reads may straddle a transition.
+        self.assertTrue(value['loop']['active']);self.assertTrue(value['loop']['completed'])
+
+    def test_nearby_unavailable_keeps_all_private_reads_unknown(self):
+        for reason in ('FIELD_UNAVAILABLE','REFLECTION_REJECTED','TYPE_MISMATCH','READ_ERROR'):
+            value=self.nearby();value.update(availability=reason,statusClass='UNKNOWN',admissionLocked=None)
+            value['loop']=dict.fromkeys(value['loop']);value['worker']=dict.fromkeys(value['worker'])
+            android.safe_nearby_observation(value)
+            value['admissionLocked']=False
+            with self.assertRaises(android.Refused):android.safe_nearby_observation(value)
+
+    def test_nearby_closed_fields_and_enum_reject_raw_text_without_echo(self):
+        marker='NEVER_EMIT_PRIVATE_ADDRESS_EXCEPTION_OR_TEXT'
+        for key,item in [('statusClass',marker),('availability',marker),('rawAddress',marker),('statusClass',[]),('availability',{})]:
+            value=self.nearby();value[key]=item
+            with self.assertRaises(android.Refused) as failure:android.safe_nearby_observation(value)
+            self.assertNotIn(marker,str(failure.exception))
+        value=self.nearby();value['worker']['stack']=marker
+        with self.assertRaises(android.Refused):android.safe_nearby_observation(value)
+
+    def test_nearby_job_types_and_presence_remain_strict(self):
+        for key,item in [('present',1),('active',1),('completed','false'),('cancelled',0)]:
+            value=self.nearby();value['loop'][key]=item
+            with self.assertRaises(android.Refused):android.safe_nearby_observation(value)
+        value=self.nearby();value['worker']['active']=False
+        with self.assertRaises(android.Refused):android.safe_nearby_observation(value)
+        value=self.nearby();value['admissionLocked']=0
+        with self.assertRaises(android.Refused):android.safe_nearby_observation(value)
+
+    def test_nearby_nonreadable_cannot_report_false_job_or_mutex(self):
+        value=self.nearby();value.update(availability='READ_ERROR',admissionLocked=None)
+        value['loop']=dict.fromkeys(value['loop']);value['worker']=dict.fromkeys(value['worker'])
+        value['worker']['present']=False
+        with self.assertRaises(android.Refused):android.safe_nearby_observation(value)
+
+    def test_nearby_diagnostic_does_not_weaken_progress_header_or_size_bound(self):
+        value=self.progress();value['nearbyObservation']=self.nearby();value['kind']='INVALID'
+        with self.assertRaises(android.Refused):android.safe_native_progress(json.dumps(value).encode())
+        value=self.progress();value['nearbyObservation']=self.nearby();value['unexpected']='x'
+        with self.assertRaises(android.Refused):android.safe_native_progress(json.dumps(value).encode())
+        with self.assertRaises(android.Refused):android.safe_native_progress(b' '*4097)
+
+    def test_nearby_kotlin_probe_only_reads_existing_fields_and_properties(self):
+        source=(Path(__file__).parent/'LanV7ReverseSyntheticWriterTest.kt').read_text(encoding='utf-8')
+        block=source.split('private fun nearbyReadOnly(',1)[1].split('private suspend fun await(',1)[0]
+        for required in ('field("loop")','field("nearbyWorker")','field("nearbyAdmission")',
+            'current.isActive','current.isCompleted','current.isCancelled','admission.isLocked',
+            'NOT_CONNECTED_PROJECTION','LISTENING_WAITING','RETRY_UNAVAILABLE','NO_PEER_FOUND','INDEX_READ','UNKNOWN'):
+            self.assertIn(required,block)
+        for forbidden in ('.start(','.open(','.resume', '.trySend(','.cancel(','.join(','.connect(',
+            '.inspect(','.recover(','.tryLock(','.withLock(', 'Mutex()', 'SupervisorJob()', 'synchronized('):
+            self.assertNotIn(forbidden,block)
+        self.assertIn('.put("nearbyObservation", readNearby?.invoke() ?: JSONObject.NULL)',source)
+
+
 if __name__=='__main__':unittest.main()

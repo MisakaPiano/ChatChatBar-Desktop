@@ -72,6 +72,7 @@ class LanV7ReverseSyntheticWriterTest {
         var sourceLocalReceiptObserved: Boolean? = null
         var publicationReadAvailable: Boolean? = null
         var readGroup: (() -> LanSyncGroupPanelState)? = null
+        var readNearby: (() -> JSONObject)? = null
         val progressLock = Any()
         val publicationLock = kotlinx.coroutines.sync.Mutex()
         fun report(force: Boolean = false) {
@@ -109,6 +110,7 @@ class LanV7ReverseSyntheticWriterTest {
                 .put("groupBusy", groupBusy ?: JSONObject.NULL).put("groupPaused", groupPaused ?: JSONObject.NULL)
                 .put("groupErrorPresent", groupErrorPresent ?: JSONObject.NULL).put("diagnosticWriteFailed", diagnosticWriteFailed)
                 .put("listenerObserved", listenerObserved).put("listenerObservation", listenerDiagnostic)
+                .put("nearbyObservation", readNearby?.invoke() ?: JSONObject.NULL)
                 .put("isolatedRouteMode", "ADB_FORWARD_TRANSPARENT_TLS")
                 .put("relayAccepted", reverseRelay?.accepted?.get()?.coerceAtMost(100) ?: JSONObject.NULL)
                 .put("relayConnected", reverseRelay?.connected?.get()?.coerceAtMost(100) ?: JSONObject.NULL)
@@ -142,6 +144,7 @@ class LanV7ReverseSyntheticWriterTest {
             page = ActivityScenario.launch(LanSyncActivity::class.java)
             val coordinator = app.lanSyncOwner.groupCoordinator
             readGroup = { coordinator.state.value }
+            readNearby = nearbyReadOnly(coordinator)
             // A commit callback is still observable if later repository work stalls.
             // This task reads atomics/projections and writes only the private safe progress file.
             progressJob = launch(Dispatchers.IO) { while (isActive) { report(); delay(1_000) } }
@@ -347,6 +350,57 @@ class LanV7ReverseSyntheticWriterTest {
             report(true)
         }
         failed?.let { throw AssertionError("V7_REVERSE_ANDROID_PHASE_FAILED:$it") }
+    }
+
+    /** Read existing projections/Job flags only. Sequential samples are not an atomic lifecycle proof. */
+    private fun nearbyReadOnly(coordinator: LanSyncGroupCoordinator): () -> JSONObject {
+        data class Fields(val loop: java.lang.reflect.Field, val worker: java.lang.reflect.Field,
+            val admission: java.lang.reflect.Field)
+        fun unavailable(error: Exception): String = when (error) {
+            is NoSuchFieldException -> "FIELD_UNAVAILABLE"
+            is IllegalAccessException, is SecurityException -> "REFLECTION_REJECTED"
+            is ClassCastException -> "TYPE_MISMATCH"
+            else -> "READ_ERROR"
+        }
+        var fieldAvailability = "READABLE"
+        val fields = try {
+            fun field(name: String) = LanSyncGroupCoordinator::class.java.getDeclaredField(name).apply { isAccessible = true }
+            Fields(field("loop"), field("nearbyWorker"), field("nearbyAdmission"))
+        } catch (error: Exception) { fieldAvailability = unavailable(error); null }
+        fun unknownJob() = JSONObject().put("present", JSONObject.NULL).put("active", JSONObject.NULL)
+            .put("completed", JSONObject.NULL).put("cancelled", JSONObject.NULL)
+        fun job(value: Any?): JSONObject {
+            if (value == null) return unknownJob().put("present", false)
+            val current = value as? Job ?: throw ClassCastException()
+            return JSONObject().put("present", true).put("active", current.isActive)
+                .put("completed", current.isCompleted).put("cancelled", current.isCancelled)
+        }
+        return {
+            var availability = fieldAvailability
+            var status = "UNKNOWN"
+            var loop = unknownJob()
+            var worker = unknownJob()
+            var locked: Boolean? = null
+            try {
+                status = when (coordinator.state.value.nearby.text) {
+                    "尚未连接" -> "NOT_CONNECTED_PROJECTION"
+                    "局域网监听已启动，等待已加入设备" -> "LISTENING_WAITING"
+                    "局域网连接暂时不可用，将在前台或网络变化后重试；本机与网盘工作可继续" -> "RETRY_UNAVAILABLE"
+                    "暂未发现同网设备" -> "NO_PEER_FOUND"
+                    "已连接附近设备并读取加密索引" -> "INDEX_READ"
+                    else -> "UNKNOWN"
+                }
+                if (fields != null) {
+                    val observedLoop = job(fields.loop.get(coordinator))
+                    val observedWorker = job(fields.worker.get(coordinator))
+                    val admission = fields.admission.get(coordinator) as? kotlinx.coroutines.sync.Mutex ?: throw ClassCastException()
+                    val observedLocked = admission.isLocked
+                    loop = observedLoop; worker = observedWorker; locked = observedLocked
+                }
+            } catch (error: Exception) { availability = unavailable(error) }
+            JSONObject().put("availability", availability).put("statusClass", status)
+                .put("loop", loop).put("worker", worker).put("admissionLocked", locked ?: JSONObject.NULL)
+        }
     }
 
     private suspend fun await(timeout: Long, ready: suspend () -> Boolean) = withTimeout(timeout) {

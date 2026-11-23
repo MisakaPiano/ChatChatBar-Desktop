@@ -45,6 +45,26 @@ def safe_listener_observation(value):
          all(value[key] is None or type(value[key]) is bool for key in flags),'LISTENER_DIAGNOSTIC_VALUES')
 
 
+
+def safe_nearby_observation(value):
+    if value is None:return
+    need(type(value) is dict and set(value)=={'availability','statusClass','loop','worker','admissionLocked'},'NEARBY_DIAGNOSTIC_FIELDS')
+    need(type(value['availability']) is str and value['availability'] in {'READABLE','FIELD_UNAVAILABLE','REFLECTION_REJECTED','TYPE_MISMATCH','READ_ERROR'},'NEARBY_AVAILABILITY_ENUM')
+    need(type(value['statusClass']) is str and value['statusClass'] in {'NOT_CONNECTED_PROJECTION','LISTENING_WAITING','RETRY_UNAVAILABLE',
+         'NO_PEER_FOUND','INDEX_READ','UNKNOWN'},'NEARBY_STATUS_ENUM')
+    available=value['availability']=='READABLE'
+    for key in ('loop','worker'):
+        row=value[key]
+        need(type(row) is dict and set(row)=={'present','active','completed','cancelled'},'NEARBY_JOB_FIELDS')
+        need(all(row[x] is None or type(row[x]) is bool for x in row),'NEARBY_JOB_VALUES')
+        if available:
+            need(type(row['present']) is bool,'NEARBY_JOB_PRESENCE')
+            need(all(type(row[x]) is bool for x in ('active','completed','cancelled')) if row['present'] else
+                 all(row[x] is None for x in ('active','completed','cancelled')),'NEARBY_JOB_AVAILABILITY')
+        else:need(all(x is None for x in row.values()),'NEARBY_UNAVAILABLE_JOB_UNKNOWN')
+    need(type(value['admissionLocked']) is bool if available else value['admissionLocked'] is None,'NEARBY_MUTEX_AVAILABILITY')
+
+
 def safe_native_progress(raw):
     need(len(raw)<=4096,'NATIVE_PROGRESS_LIMIT');value=json.loads(raw)
     booleans={'initialSessionPresent','initialMessageExact','initialImageMatched','initialMessageCountCapped','durableSessionVerified','appendAttempted','appendCommitted',
@@ -52,7 +72,8 @@ def safe_native_progress(raw):
         'listenerObserved','relayBytesBothDirections','sourceSignedVersionObserved','sourceNativeFrontierObserved',
         'sourceLocalReceiptObserved','publicationReadAvailable'}
     integers={'initialMessageCount','localReverseCount','relayAccepted','relayConnected'}
-    need(set(value)==booleans|integers|{'kind','phase','sequence','firstFailurePhase','groupStage','isolatedRouteMode','listenerObservation'},'NATIVE_PROGRESS_FIELDS')
+    expected=booleans|integers|{'kind','phase','sequence','firstFailurePhase','groupStage','isolatedRouteMode','listenerObservation'}
+    need(set(value)==expected or set(value)==expected|{'nearbyObservation'},'NATIVE_PROGRESS_FIELDS')
     need(value['isolatedRouteMode']=='ADB_FORWARD_TRANSPARENT_TLS','NATIVE_ROUTE_MODE')
     need(value['kind']=='CCB_V7_ANDROID_REVERSE_PROGRESS' and value['phase'] in NATIVE_PHASES and
          value['firstFailurePhase'] in NATIVE_PHASES|{None},'NATIVE_PROGRESS_PHASE')
@@ -61,6 +82,7 @@ def safe_native_progress(raw):
     need(all(value[x] is None or type(value[x]) is bool for x in booleans) and
          all(value[x] is None or type(value[x]) is int and 0<=value[x]<=100 for x in integers),'NATIVE_PROGRESS_VALUES')
     safe_listener_observation(value['listenerObservation'])
+    if 'nearbyObservation' in value:safe_nearby_observation(value['nearbyObservation'])
     return value
 
 def isolated_route(raw):
