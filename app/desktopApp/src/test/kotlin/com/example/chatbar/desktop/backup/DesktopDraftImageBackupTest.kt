@@ -55,4 +55,26 @@ class DesktopDraftImageBackupTest {
             }
         }
     }
+    @Test fun `omitted images retain computer image draft even when phone has no draft record`() = runBlocking {
+        val sessionPath = "entities/chat_sessions/s.json"; val draftPath = "entities/chat_drafts/s.json"
+        val session = backupJson.encodeToJsonElement(ChatSession.serializer(), ChatSession("s", "c", "Synthetic", createdAt = 1, updatedAt = 1)).jsonObject
+        val draft = backupJson.encodeToJsonElement(ChatDraft.serializer(), ChatDraft("s", "unsent computer", 1,
+            listOf(DesktopBackupPolicy.PREFIX + "images/pc.png"))).jsonObject
+        val pc = mapOf(sessionPath to session, draftPath to draft)
+        val phone = mapOf(sessionPath to session)
+        val media = mapOf("images/pc.png" to "a".repeat(64))
+        for (include in listOf(false, true)) {
+            val scope = InspectionScope(emptySet(), 1, 1, if (include) 1 else 0, 0, 0, false, false, false, false, false,
+                sessionDefaultChoice = InspectionSessionChoice(images = include))
+            val preview = DesktopMergePreview.create(pc, phone, media, emptyMap(), scope)
+            DesktopMergeDestinationPlan.create(preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.TAKE_PHONE }), media, emptyMap()).use { plan ->
+                assertEquals(!include, draftPath in plan.entities)
+                if (!include) {
+                    assertEquals(JsonPrimitive("unsent computer"), plan.entities.getValue(draftPath)["content"])
+                    assertEquals(1, plan.entities.getValue(draftPath).getValue("images").jsonArray.size)
+                    assertEquals(DesktopMergeDestinationPlan.Side.COMPUTER, plan.resources.values.single().side)
+                }
+            }
+        }
+    }
 }

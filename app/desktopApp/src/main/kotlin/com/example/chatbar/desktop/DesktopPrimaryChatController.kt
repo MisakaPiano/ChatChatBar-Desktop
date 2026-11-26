@@ -957,6 +957,7 @@ internal class DesktopPrimaryChatController(
         }
         val persistedText = chats.getSessionDraftSnapshot(sessionId)?.content.orEmpty()
         stateLock.withLock { synchronized(composerLock) {
+            check(sessionId !in deletingSessions) { "会话正在删除；附件未加入草稿" }
             val pending = pendingBySession[sessionId].orEmpty() + prepared
             val text = if (state.value.selectedSession?.id == sessionId) state.value.composerDraft
                 else draftPersistence.latestText(sessionId) ?: persistedText
@@ -969,12 +970,12 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun reorderPendingImage(id: String, to: Int) = stateLock.withLock {
-        val session = state.value.selectedSession ?: return@withLock
-        val pending = pendingBySession[session.id].orEmpty().toMutableList()
-        val from = pending.indexOfFirst { it.id == id }
-        if (from < 0 || to !in pending.indices) return@withLock
-        pending.add(to, pending.removeAt(from))
         synchronized(composerLock) {
+            val session = state.value.selectedSession ?: return@synchronized
+            val pending = pendingBySession[session.id].orEmpty().toMutableList()
+            val from = pending.indexOfFirst { it.id == id }
+            if (from < 0 || to !in pending.indices) return@synchronized
+            pending.add(to, pending.removeAt(from))
             pendingComposerClears.remove(session.id)
             draftPersistence.submit(session.id, state.value.composerDraft, pending)
             pendingBySession[session.id] = pending
@@ -985,9 +986,11 @@ internal class DesktopPrimaryChatController(
     fun imageIngressFailure() { mutableState.update { it.copy(error = "图片附件无法读取；原有附件保留") } }
 
     suspend fun removePendingImage(id: String) = stateLock.withLock {
-        val session = state.value.selectedSession ?: return@withLock
-        val pending = pendingBySession[session.id].orEmpty().filterNot { it.id == id }
         synchronized(composerLock) {
+            val session = state.value.selectedSession ?: return@synchronized
+            val before = pendingBySession[session.id].orEmpty()
+            if (before.none { it.id == id }) return@synchronized
+            val pending = before.filterNot { it.id == id }
             pendingComposerClears.remove(session.id)
             draftPersistence.submit(session.id, state.value.composerDraft, pending)
             pendingBySession[session.id] = pending
@@ -1442,6 +1445,11 @@ internal class DesktopPrimaryChatController(
                 mutableState.update {
                     if (it.selectedSession?.id == revision.sessionId) it.copy(composerDraft = "", pendingImages = emptyList(), error = null) else it
                 }
+            } else if (draftPersistence.latestRevision(revision.sessionId) == revision) {
+                mutableState.update { current ->
+                    if (current.selectedSession?.id == revision.sessionId && current.error == "Unable to save chat draft")
+                        current.copy(error = null) else current
+                }
             }
         }
     }
@@ -1509,17 +1517,17 @@ internal class DesktopPrimaryChatController(
             val effectiveModels = desktopEffectiveModels(modelConfiguration)
             val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-            val persistedDraft = if (state.value.selectedSession?.id == id) null else {
-                draftPersistence.flush(id)
-                chats.getSessionDraftSnapshot(id)
-            }
-            val restoredDraftImages = if (persistedDraft?.images.isNullOrEmpty()) emptyList()
-                else requireNotNull(imageStore) { "无法恢复草稿附件；原草稿保留" }.restoreDraftImages(persistedDraft!!.images)
-            if (persistedDraft != null) pendingBySession.putIfAbsent(id, restoredDraftImages)
             val deferredSelection: suspend () -> Unit = { selectSession(id) }
             // Edits may arrive while selection reads suspend. Commit a switch only after the outgoing
             // revision is durable, checking it again under the same lock used to capture edits.
             while (true) {
+                val targetRevision = synchronized(composerLock) { draftPersistence.latestRevision(id) }
+                val switching = state.value.selectedSession?.id != id
+                draftPersistence.await(targetRevision)
+                val persistedDraft = if (switching) chats.getSessionDraftSnapshot(id) else null
+                val restoredDraftImages = if (persistedDraft?.images.isNullOrEmpty()) emptyList()
+                    else requireNotNull(imageStore) { "无法恢复草稿附件；原草稿保留" }.restoreDraftImages(persistedDraft!!.images)
+
                 val outgoing = synchronized(composerLock) {
                     state.value.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
                 }
@@ -1537,11 +1545,15 @@ internal class DesktopPrimaryChatController(
                     val latest = current.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
                     obsoleteWindow = if (sameSession) current.messageWindowRevision != initial.messageWindowRevision
                         else (readingPositions.latestPosition(id)?.capturedAt ?: Long.MIN_VALUE) > (restorePosition?.capturedAt ?: Long.MIN_VALUE)
-                    if (latest != outgoing || obsoleteWindow) false else {
+                    if (latest != outgoing || obsoleteWindow ||
+                        (current.selectedSession?.id != id && draftPersistence.latestRevision(id) != targetRevision)) false else {
                         val keepDraft = current.selectedSession?.id == id && (preserveWindow ||
                             current.sessionSettingsDirty || current.sessionSettingsDraft != settingsBaseline ||
                             current.sessionReplyLengthInput != settingsBaseline?.replyLength?.toString())
-                        if (current.selectedSession?.id != id) pendingSessionSettingsLeave = null
+                        if (current.selectedSession?.id != id) {
+                            pendingSessionSettingsLeave = null
+                            pendingBySession[id] = restoredDraftImages
+                        }
                         if (!keepDraft) settingsBaseline = session
                         mutableState.value = current.copy(
                             characters = characterItems,

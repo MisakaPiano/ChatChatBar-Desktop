@@ -38,11 +38,14 @@ internal class DesktopMergeRetainedMedia(
         fun incomingFamily(types: Set<String>): Set<String> = incoming.records.keys.filter { DesktopBackupPolicy.entityType(it) in types }
             .mapNotNull { path -> checkActive(); incoming.records.getValue(path)["sessionId"]?.jsonPrimitive?.contentOrNull
                 ?.let { identity.value("chat_sessions", it) } }.toSet()
+        val draftSessions = incomingFamily(setOf("chat_drafts"))
         val archiveSessions = incomingFamily(setOf("save_slots"))
         val voiceSessions = incomingFamily(setOf("generated_voice_messages", "voice_anchor_states"))
         val retained = paths.filter { (identity, path) ->
             checkActive()
-            if (identity.first() != "chat_messages" || identity in incomingMessages) false else {
+            val kind = identity.first()
+            val alreadyIncoming = if (kind == "chat_drafts") identity.last() in draftSessions else identity in incomingMessages
+            if (kind !in setOf("chat_messages", "chat_drafts") || alreadyIncoming) false else {
                 val value = records.getValue(path)
                 val session = value["sessionId"]?.jsonPrimitive?.contentOrNull
                 val imagesSelected = sourceChoice(session)?.images

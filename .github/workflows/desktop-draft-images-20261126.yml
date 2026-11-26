@@ -36,31 +36,37 @@ jobs:
           New-Item -ItemType Directory -Path 'draft-review' | Out-Null
           git rev-parse HEAD | Set-Content 'draft-review/source.txt'
           git rev-parse 'HEAD^{tree}' | Set-Content 'draft-review/tree.txt'
-      - name: Reproduce attachment loss before USER with fixed old controller
+      - name: Reproduce frozen old Stop loss and target selection race
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $prior = '485b721b0d85448cbe8eec986691ccef8012e3ca'
           $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt'
-          git fetch origin $prior --depth=1
-          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_SOURCE_UNAVAILABLE' }
-          try {
-            git restore --source=$prior --worktree -- $file
-            Push-Location app
+          $cases = @(
+            @{ source = '485b721b0d85448cbe8eec986691ccef8012e3ca'; name = 'stop'; test = 'Stop during image understanding keeps image draft through actual container restart' },
+            @{ source = '5f49aa62d66e077de32e5b367b6251912e498c9d'; name = 'target-selection'; test = 'switching back rechecks target revision after USER consumes an already read image draft' }
+          )
+          foreach ($case in $cases) {
+            git fetch origin $case.source --depth=1
+            if ($LASTEXITCODE -ne 0) { throw 'PRIOR_SOURCE_UNAVAILABLE' }
             try {
-              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest.Stop during image understanding keeps image draft through actual container restart' -PdesktopTestHeadless=true --no-daemon --stacktrace
-              $negativeExit = $LASTEXITCODE
-            } finally { Pop-Location }
-            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest.xml'
-            [xml]$report = Get-Content -Raw -LiteralPath $path
-            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_DRAFT_ASSERTION_NOT_REACHED' }
-            if ($report.testsuite.testcase.failure.type -notlike '*Assertion*') { throw 'PRIOR_DRAFT_WRONG_FAILURE' }
-            Copy-Item -LiteralPath $path -Destination 'draft-review/negative-draft-stop.xml'
-            $prior | Set-Content 'draft-review/negative-source.txt'
-          } finally {
-            git restore --source=HEAD --worktree -- $file
-            git diff --exit-code -- $file
-            if ($LASTEXITCODE -ne 0) { throw 'CURRENT_SOURCE_NOT_RESTORED' }
+              git restore --source=$($case.source) --worktree -- $file
+              Push-Location app
+              try {
+                .\gradlew.bat :desktopApp:test --tests "com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest.$($case.test)" -PdesktopTestHeadless=true --no-daemon --stacktrace
+                $negativeExit = $LASTEXITCODE
+              } finally { Pop-Location }
+              $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest.xml'
+              [xml]$report = Get-Content -Raw -LiteralPath $path
+              if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_DRAFT_ASSERTION_NOT_REACHED' }
+              if ($report.testsuite.testcase.failure.type -notin @('java.lang.AssertionError', 'org.junit.ComparisonFailure')) { throw 'PRIOR_DRAFT_WRONG_FAILURE' }
+              if ($report.testsuite.testcase.name -ne $case.test) { throw 'PRIOR_DRAFT_WRONG_TEST' }
+              Copy-Item -LiteralPath $path -Destination "draft-review/negative-$($case.name).xml"
+              $case.source | Set-Content "draft-review/negative-$($case.name)-source.txt"
+            } finally {
+              git restore --source=HEAD --worktree -- $file
+              git diff --exit-code -- $file
+              if ($LASTEXITCODE -ne 0) { throw 'CURRENT_SOURCE_NOT_RESTORED' }
+            }
           }
       - name: Verify portable draft DTO and repository
         working-directory: app

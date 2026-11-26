@@ -28,6 +28,7 @@ internal class DesktopChatImages(
     private val cleanup: suspend (List<String>) -> Unit = {},
     private val persistMessage: suspend (ChatMessage) -> ChatMessage = chats::addMessage,
     private val updateMessage: suspend (ChatMessage) -> Unit = chats::updateMessage,
+    private val afterDraftImagesRead: suspend () -> Unit = {},
 ) {
     private val editMutex = Mutex()
     fun read(reference: String): ByteArray = resources.readBytes(reference)
@@ -64,6 +65,8 @@ internal class DesktopChatImages(
 
     suspend fun persistDraft(sessionId: String, text: String, attachments: List<DesktopPendingImage>) =
         gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
+            val owner = chats.readSessionDurable(sessionId)
+            check(owner is EntityReadResult.Valid && owner.value.id == sessionId) { "会话已不可用；草稿附件未写入" }
             val references = attachments.map { pending ->
                 draftReferences[pending.id]?.also { reference ->
                     check(resources.readBytes(reference).contentEquals(pending.bytes)) { "草稿附件已变化；保留原草稿" }
@@ -75,11 +78,15 @@ internal class DesktopChatImages(
         } }
 
     suspend fun restoreDraftImages(references: List<String>): List<DesktopPendingImage> = gate.withNormalOperation {
-        withContext(Dispatchers.IO) { references.map { reference ->
-            val bytes = resources.readBytes(reference)
-            DesktopImageEditing.decode(bytes)
-            DesktopPendingImage(bytes = bytes.copyOf()).also { draftReferences[it.id] = reference }
-        } }
+        withContext(Dispatchers.IO) {
+            val images = references.map { reference ->
+                val bytes = resources.readBytes(reference)
+                DesktopImageEditing.decode(bytes)
+                DesktopPendingImage(bytes = bytes.copyOf()).also { draftReferences[it.id] = reference }
+            }
+            afterDraftImagesRead()
+            images
+        }
     }
 
     suspend fun persistUser(sessionId: String, text: String, attachments: List<DesktopPendingImage>): ChatMessage =

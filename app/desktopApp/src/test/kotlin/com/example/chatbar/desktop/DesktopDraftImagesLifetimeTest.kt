@@ -102,6 +102,57 @@ class DesktopDraftImagesLifetimeTest {
         } } finally { c.close(); parent.toFile().deleteRecursively() }
     }
 
+    @Test fun `switching back rechecks target revision after USER consumes an already read image draft`() = runBlocking {
+        val parent = Files.createTempDirectory("synthetic-draft-switch-race-"); val c = container(parent)
+        val allowVision = java.util.concurrent.CountDownLatch(1)
+        val selectedDraftRead = CompletableDeferred<Unit>(); val releaseSelection = CompletableDeferred<Unit>()
+        val arm = java.util.concurrent.atomic.AtomicBoolean(false)
+        val images = DesktopChatImages(c.characterResourceStore, c.chatRepository, c.dataOperationCoordinator,
+            afterDraftImagesRead = { if (arm.compareAndSet(true, false)) { selectedDraftRead.complete(Unit); releaseSelection.await() } })
+        val controller = DesktopPrimaryChatController(
+            characters = c.characterRepository, chats = c.chatRepository, settings = c.settingsRepository,
+            models = c.effectiveModelResolver, formats = c.formatCardRepository, worldBooks = c.worldBookRepository,
+            sessionService = c.characterSessionService, characterResources = c.characterResourceStore,
+            taskRuntime = c.taskRuntime, imageStore = images)
+        try { MockWebServer().use { server ->
+            val requests = java.util.concurrent.atomic.AtomicInteger()
+            server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    if (requests.incrementAndGet() == 1) check(allowVision.await(10, TimeUnit.SECONDS))
+                    return reply("synthetic response")
+                }
+            }
+            val a = prepare(c, server); val cardB = CharacterCard.create("B"); c.characterRepository.save(cardB)
+            val b = c.characterSessionService.createSessionForCharacter(cardB.id)
+            controller.refresh(); controller.selectSession(a)
+            controller.receiveImages(DesktopImageIngress(raster = png(0xff123456.toInt()))); controller.editComposer("old sent draft")
+            val task = assertNotNull(controller.send()); assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+            controller.selectSession(b)
+            arm.set(true)
+            val switching = async { controller.selectSession(a) }
+            withTimeout(10_000) { selectedDraftRead.await() }
+            allowVision.countDown(); terminal(c, task)
+            controller.flushComposerForSnapshot()
+            assertNull(c.chatRepository.getSessionDraftSnapshot(a))
+            releaseSelection.complete(Unit); switching.await()
+            assertEquals(a, controller.state.value.selectedSession?.id)
+            assertEquals("", controller.state.value.composerDraft)
+            assertTrue(controller.state.value.pendingImages.isEmpty())
+        } } finally { allowVision.countDown(); releaseSelection.complete(Unit); controller.closeDraftPersistence(); c.close(); parent.toFile().deleteRecursively() }
+    }
+
+    @Test fun `late draft publication cannot recreate deleted session authority`() = runBlocking {
+        val parent = Files.createTempDirectory("synthetic-draft-deleted-"); val c = container(parent)
+        try {
+            val id = prepare(c)
+            val image = c.chatImages.prepareBytes(png(0xff123456.toInt()))
+            Files.delete(c.appDataRoot.resolve("entities/chat_sessions/$id.json"))
+            assertFails { c.chatImages.persistDraft(id, "late", listOf(image)) }
+            assertNull(c.chatRepository.getSessionDraftSnapshot(id))
+            assertFalse(Files.exists(c.appDataRoot.resolve("entities/chat_sessions/$id.json")))
+        } finally { c.close(); parent.toFile().deleteRecursively() }
+    }
+
     @Test fun `failed image draft write retries the same admitted attachment snapshot`() = runBlocking {
         val parent = Files.createTempDirectory("synthetic-draft-io-"); val c = container(parent)
         var fail = true
@@ -123,6 +174,7 @@ class DesktopDraftImagesLifetimeTest {
             val draft = assertNotNull(c.chatRepository.getSessionDraftSnapshot(id))
             assertContentEquals(image, c.chatImages.read(draft.images.single()))
             assertEquals(1, controller.state.value.pendingImages.size)
+            assertNull(controller.state.value.error)
         } finally { fail = false; controller.persistComposer(); controller.closeDraftPersistence(); c.close(); parent.toFile().deleteRecursively() }
     }
 }
