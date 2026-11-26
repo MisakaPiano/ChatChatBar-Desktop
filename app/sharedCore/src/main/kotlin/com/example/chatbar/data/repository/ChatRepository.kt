@@ -278,9 +278,8 @@ class ChatRepository internal constructor(
         }
 
     private fun ownsMessage(key: String, message: ChatMessage, sessionId: String): Boolean {
-        if (message.sessionId != sessionId) return false
-        check(key == messageStorageId(sessionId, message.id)) { "消息存储键与会话归属不一致" }
-        return true
+        check(key == messageStorageId(message.sessionId, message.id)) { "消息存储键与会话归属不一致" }
+        return message.sessionId == sessionId
     }
 
     /** 顺序分批读取会话消息；调用方每次只需持有一个小批次。 */
