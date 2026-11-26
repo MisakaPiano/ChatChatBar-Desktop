@@ -2,6 +2,7 @@ package com.example.chatbar.data.repository
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.data.operation.AppDataOperationGate
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
@@ -123,5 +124,37 @@ class ChatMessageOwnerScopeTest {
         assertEquals(0, json.decodeFromString(ChatMessageIndex.serializer(), old).ownerScopeVersion)
         val verified = json.encodeToString(ChatMessageIndex.serializer(), ChatMessageIndex("s", ownerScopeVersion = 1))
         assertTrue("ownerScopeVersion" in json.parseToJsonElement(verified).jsonObject)
+    }
+
+    @Test fun `failed index publication after source replacement cannot reuse previous transcript`() = runBlocking {
+        for (stream in listOf(false, true)) {
+            val root = root(); seed(root, message("s", "old"), message("s_child", "m"))
+            val index = root.resolve("entities/chat_message_indexes/s.json")
+            val child = path(root, "s_child", "m"); val childBytes = Files.readAllBytes(child)
+            var armed = false; var blocked = false
+            val gate = object : AppDataOperationGate {
+                override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                    if (armed && !blocked && Files.exists(path(root, "s", "next"))) {
+                        blocked = true
+                        // Fault the actual index destination after source publication, without a JVM/mock writer.
+                        Files.createDirectory(index)
+                        Files.writeString(index.resolve("hold"), "synthetic index fault")
+                    }
+                    return operation()
+                }
+            }
+            val repo = ChatRepository(JsonFileStorage(root, gate))
+            assertEquals(listOf("old"), repo.getMessages("s").map { it.id })
+            armed = true
+            val result = runCatching {
+                if (stream) repo.replaceMessagesForSessionStreaming("s") { emit -> emit(message("s", "next")) }
+                else repo.replaceMessagesForSession("s", listOf(message("s", "next")))
+            }
+            assertTrue(blocked); assertTrue(result.isFailure)
+            armed = false; index.toFile().deleteRecursively()
+            assertEquals(listOf("next"), repo.getMessages("s").map { it.id })
+            assertEquals(listOf("next"), ChatRepository(JsonFileStorage(root)).getMessages("s").map { it.id })
+            assertContentEquals(childBytes, Files.readAllBytes(child))
+        }
     }
 }

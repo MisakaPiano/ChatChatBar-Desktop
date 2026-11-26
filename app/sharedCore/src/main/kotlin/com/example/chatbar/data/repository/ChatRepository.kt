@@ -1006,13 +1006,17 @@ class ChatRepository internal constructor(
 
     private suspend fun deleteMessagesForSessionLocked(sessionId: String): Int {
         // A partial deletion must not leave a reusable derived transcript.
-        storage.deleteEntityUncached(MESSAGE_INDEX_TYPE, sessionId)
-        messageIndexes.remove(sessionId)
+        invalidateMessageIndexLocked(sessionId)
         val deleted = storage.deleteWhereKeyedUncachedStrict(MESSAGE_TYPE, ChatMessage.serializer()) { key, message ->
             ownsMessage(key, message, sessionId)
         }
         storage.deleteEntity<ChatMessageOrderBackup>(MESSAGE_ORDER_BACKUP_TYPE, sessionId)
         return deleted
+    }
+
+    private suspend fun invalidateMessageIndexLocked(sessionId: String) {
+        messageIndexes.remove(sessionId)
+        storage.deleteEntityUncached(MESSAGE_INDEX_TYPE, sessionId, requireSuccessfulDelete = true)
     }
 
     /** 批量替换会话消息，避免逐条更新会话预览与反复全量加载。 */
@@ -1022,6 +1026,7 @@ class ChatRepository internal constructor(
             messageStorageId(sessionId, normalized.id) to normalized
         }
         require(entities.size == messages.size) { "替换消息身份重复，未改原件" }
+        invalidateMessageIndexLocked(sessionId)
         storage.replaceWhereKeyedStreamingUncachedStrict(MESSAGE_TYPE, ChatMessage.serializer(),
             { key, message -> ownsMessage(key, message, sessionId) }) { emit ->
             entities.forEach { (key, value) -> emit(key, value) }
@@ -1058,6 +1063,7 @@ class ChatRepository internal constructor(
         var latest: ChatMessage? = null
         var maxSourceOrder = 0L
         var maxTimelineTurn = 0L
+        invalidateMessageIndexLocked(sessionId)
         storage.replaceWhereKeyedStreamingUncachedStrict(
             entityType = MESSAGE_TYPE,
             serializer = ChatMessage.serializer(),

@@ -774,7 +774,7 @@ class JsonFileStorage(
         try {
             val attributes = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
             check(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther) { "Unsafe entity target" }
-            return openJsonInput(entityType, file).use { json.decodeFromStream(serializer, it) }
+            return openJsonInput(entityType, file).use { Json(json) { ignoreUnknownKeys = false }.decodeFromStream(serializer, it) }
         } catch (error: NoSuchFileException) {
             if (Files.notExists(file.toPath(), LinkOption.NOFOLLOW_LINKS)) return null
             throw error
@@ -937,10 +937,11 @@ class JsonFileStorage(
     }
 
     /** 删除未进入通用缓存的大型实体。 */
-    suspend fun deleteEntityUncached(entityType: String, id: String) =
+    suspend fun deleteEntityUncached(entityType: String, id: String, requireSuccessfulDelete: Boolean = false) =
         mutexFor(entityType).withLock {
             withContext(Dispatchers.IO) {
-                entityFile(entityType, id).delete()
+                val file = entityFile(entityType, id)
+                if (requireSuccessfulDelete) Files.deleteIfExists(file.toPath()) else file.delete()
             }
         }
 
