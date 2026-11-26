@@ -431,6 +431,7 @@ internal fun DesktopPrimaryChatPanel(
                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                             state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                             state.error?.let { StatusText(t.status(it), colors.destructive) }
+                            DesktopDraftRetry(state.error == "Unable to save chat draft") { scope.launch { controller.persistComposer() } }
                             desktopLatestChatFailure(tasks, selected.id)
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == null }?.let { imageTask ->
@@ -461,6 +462,7 @@ internal fun DesktopPrimaryChatPanel(
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 sendKey = preferences.sendKey, onSendKey = chooseSendKey,
+                draftRecoveryControls = { DesktopDraftRetry(state.error == "Unable to save chat draft") { scope.launch { controller.persistComposer() } } },
                 narrativeControls = { DesktopComposerNarrativeControl(state) { narrativeModeOpen = true } },
                 voiceControls = { DesktopComposerVoiceControl(state, voiceUi,
                     state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true) },

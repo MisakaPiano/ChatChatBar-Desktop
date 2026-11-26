@@ -81,6 +81,8 @@ jobs:
         run: >-
           .\gradlew.bat :desktopApp:test
           --tests 'com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopDraftRetryTest'
+          --tests 'com.example.chatbar.desktop.DesktopFullComposerTest'
           --tests 'com.example.chatbar.desktop.backup.DesktopDraftImageBackupTest'
           --tests 'com.example.chatbar.desktop.DesktopChatDraftPersistenceTest'
           --tests 'com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest'

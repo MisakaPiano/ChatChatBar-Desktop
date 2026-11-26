@@ -447,6 +447,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     YES("是", "yes"), NO("否", "no"), EMPTY("空", "empty"),
     CHARACTER_MANAGEMENT("角色管理", "Character management"), NEW_CHARACTER("新建角色", "New Character"),
     EDIT_CHARACTER("编辑角色", "Edit Character"), RECOVERED_DRAFT("已恢复未保存草稿", "Unsaved draft recovered"),
+    CHAT_DRAFT_RETRY_SAVE("重试保存草稿", "Retry saving draft"),
     DRAFT_SAVING("正在保存草稿", "Saving draft"), DISCARD_DRAFT("放弃草稿", "Discard draft"),
     CHARACTER_NAME("角色卡名称", "Character card name"), BOT_NAME("助手名称", "Bot name"),
     GREETING("开场白", "Greeting"), ALTERNATE_GREETINGS("备用开场白", "Alternate greetings"),

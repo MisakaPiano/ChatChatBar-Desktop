@@ -35,6 +35,7 @@ internal class DesktopChatDraftPersistence(
     private val latest = mutableMapOf<String, DesktopDraftRevision>()
     private val pending = linkedMapOf<String, Pending>()
     private val latestValues = mutableMapOf<String, Pending>()
+    private val completed = mutableMapOf<String, Outcome>()
     private val outcomes = MutableStateFlow<Map<String, Outcome>>(emptyMap())
     private val signal = Channel<Unit>(Channel.CONFLATED)
     private val supervisor = SupervisorJob()
@@ -52,6 +53,9 @@ internal class DesktopChatDraftPersistence(
                 } catch (_: Throwable) {
                     false
                 }
+                // The failure action can run as soon as onResult exposes it. Make retry metadata
+                // available first, while await still acknowledges only after the UI transition.
+                synchronized(lock) { completed[next.revision.sessionId] = Outcome(next.revision.sequence, successful) }
                 onResult(next.revision, successful)
                 outcomes.value = outcomes.value + (next.revision.sessionId to Outcome(next.revision.sequence, successful))
             }
@@ -66,9 +70,15 @@ internal class DesktopChatDraftPersistence(
 
     fun retryLatest(sessionId: String, onAccepted: (DesktopDraftRevision) -> Unit = {}): DesktopDraftRevision? = synchronized(lock) {
         val value = latestValues[sessionId] ?: return@synchronized null
-        val outcome = outcomes.value[sessionId]
+        val outcome = completed[sessionId]
         if (outcome?.sequence == value.revision.sequence && !outcome.successful)
             submitLocked(sessionId, value.text, value.images, onAccepted) else null
+    }
+
+    fun failedSessions(): List<String> = synchronized(lock) {
+        latest.filter { (session, revision) ->
+            completed[session]?.let { it.sequence == revision.sequence && !it.successful } == true
+        }.keys.toList()
     }
 
     fun latestRevision(sessionId: String): DesktopDraftRevision? = synchronized(lock) { latest[sessionId] }

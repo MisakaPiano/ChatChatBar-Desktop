@@ -913,14 +913,25 @@ internal class DesktopPrimaryChatController(
 
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
     suspend fun persistComposer() = guarded {
-        state.value.selectedSession?.id?.let { id ->
-            synchronized(composerLock) {
+        // The visible failure may belong to an outgoing target whose selection was refused.
+        // Retry its retained snapshot too, rather than silently flushing the current page only.
+        val sessions = (draftPersistence.failedSessions() + listOfNotNull(state.value.selectedSession?.id)).distinct()
+        synchronized(composerLock) {
+            for (id in sessions) {
                 val before = draftPersistence.latestRevision(id)
                 draftPersistence.retryLatest(id) { retry ->
                     if (pendingComposerClears[id] == before && before != null) pendingComposerClears[id] = retry
                 }
             }
-            draftPersistence.flush(id)
+        }
+        var failed = false
+        for (id in sessions) {
+            try { draftPersistence.flush(id) }
+            catch (_: DesktopDraftPersistenceException) { failed = true }
+        }
+        if (failed) throw DesktopDraftPersistenceException()
+        if (draftPersistence.failedSessions().isEmpty()) mutableState.update { current ->
+            if (current.error == "Unable to save chat draft") current.copy(error = null) else current
         }
     }
 

@@ -13,6 +13,28 @@ import kotlin.test.assertTrue
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DesktopChatDraftPersistenceTest {
+    @Test fun `failure callback can immediately retry before waiter acknowledgement`() = runTest {
+        lateinit var writer: DesktopChatDraftPersistence
+        var attempts = 0
+        val results = mutableListOf<Boolean>()
+        writer = DesktopChatDraftPersistence(
+            write = { _, _ -> if (++attempts == 1) error("synthetic write refusal") },
+            dispatcher = kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler),
+            onResult = { _, successful ->
+                results += successful
+                if (!successful) {
+                    assertEquals(listOf("s"), writer.failedSessions())
+                    assertTrue(writer.retryLatest("s") != null)
+                }
+            })
+        writer.submit("s", "retained snapshot")
+        writer.flush("s")
+        assertEquals(2, attempts)
+        assertEquals(listOf(false, true), results)
+        assertTrue(writer.failedSessions().isEmpty())
+        writer.closeAndDrain()
+    }
+
     @Test
     fun `queued edits conflate by session and a late signal cannot write old text`() = runTest {
         val writes = mutableListOf<Pair<String, String>>()

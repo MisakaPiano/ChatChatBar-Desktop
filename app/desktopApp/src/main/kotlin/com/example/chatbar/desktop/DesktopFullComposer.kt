@@ -158,6 +158,7 @@ internal fun DesktopFullComposer(
     onSendKey: (DesktopSendKey) -> Unit = {},
     narrativeControls: @Composable () -> Unit = {},
     voiceControls: @Composable () -> Unit = {},
+    draftRecoveryControls: @Composable () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
@@ -172,6 +173,7 @@ internal fun DesktopFullComposer(
             }
             configurationMessage?.let { StatusText(t.status(it), colors.warning) }
             error?.let { StatusText(t.status(it), colors.destructive) }
+            draftRecoveryControls()
             attachments()
             DesktopChoiceUndo(composer, onUndoChoice)
             DesktopComposerTextField(composer, full = true, canLaunch, onDraft, onSend,

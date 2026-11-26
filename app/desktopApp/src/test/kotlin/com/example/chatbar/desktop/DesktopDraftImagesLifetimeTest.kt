@@ -153,6 +153,52 @@ class DesktopDraftImagesLifetimeTest {
         } finally { c.close(); parent.toFile().deleteRecursively() }
     }
 
+    @Test fun `explicit retry attempts recovered B even while outgoing A clear keeps failing`() = runBlocking {
+        val parent = Files.createTempDirectory("synthetic-draft-hidden-failure-"); val c = container(parent)
+        val allowVision = java.util.concurrent.CountDownLatch(1)
+        val failClear = java.util.concurrent.atomic.AtomicBoolean(true)
+        val failB = java.util.concurrent.atomic.AtomicBoolean(true)
+        var controller: DesktopPrimaryChatController? = null
+        try { MockWebServer().use { server ->
+            val requests = java.util.concurrent.atomic.AtomicInteger()
+            server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    if (requests.incrementAndGet() == 1) check(allowVision.await(10, TimeUnit.SECONDS))
+                    return reply("synthetic response")
+                }
+            }
+            val a = prepare(c, server); val cardB = CharacterCard.create("B"); c.characterRepository.save(cardB)
+            val b = c.characterSessionService.createSessionForCharacter(cardB.id)
+            val owner = DesktopPrimaryChatController(
+                characters = c.characterRepository, chats = c.chatRepository, settings = c.settingsRepository,
+                models = c.effectiveModelResolver, formats = c.formatCardRepository, worldBooks = c.worldBookRepository,
+                sessionService = c.characterSessionService, characterResources = c.characterResourceStore,
+                taskRuntime = c.taskRuntime, imageStore = c.chatImages,
+                draftWriter = { session, text ->
+                    if (session == a && text.isEmpty() && failClear.get() || session == b && failB.get()) error("synthetic IO refusal") })
+            controller = owner
+            owner.refresh(); owner.selectSession(a)
+            owner.receiveImages(DesktopImageIngress(raster = png(0xff123456.toInt()))); owner.editComposer("outgoing send")
+            val task = assertNotNull(owner.send()); assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+            owner.selectSession(b); owner.editComposer("keep current B"); owner.persistComposer()
+            allowVision.countDown(); terminal(c, task)
+            withTimeout(10_000) { owner.state.first { it.error == "Unable to save chat draft" } }
+            assertTrue(runCatching { owner.flushComposerForSnapshot() }.isFailure)
+            assertNotNull(c.chatRepository.getSessionDraftSnapshot(a))
+            assertNull(c.chatRepository.getSessionDraftSnapshot(b))
+            failB.set(false); owner.persistComposer()
+            assertNotNull(c.chatRepository.getSessionDraftSnapshot(a))
+            assertEquals("keep current B", c.chatRepository.getSessionDraft(b))
+            assertNotNull(owner.state.value.error)
+            failClear.set(false); owner.persistComposer()
+            assertNull(c.chatRepository.getSessionDraftSnapshot(a))
+            assertEquals("keep current B", c.chatRepository.getSessionDraft(b))
+            assertNull(owner.state.value.error)
+            owner.selectSession(a)
+            assertEquals("", owner.state.value.composerDraft); assertTrue(owner.state.value.pendingImages.isEmpty())
+        } } finally { allowVision.countDown(); failClear.set(false); failB.set(false); controller?.persistComposer(); controller?.closeDraftPersistence(); c.close(); parent.toFile().deleteRecursively() }
+    }
+
     @Test fun `failed image draft write retries the same admitted attachment snapshot`() = runBlocking {
         val parent = Files.createTempDirectory("synthetic-draft-io-"); val c = container(parent)
         var fail = true
