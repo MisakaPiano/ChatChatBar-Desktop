@@ -1,0 +1,116 @@
+name: Desktop RAG owner preflight and restore identity
+on:
+  push:
+    branches: [codex/desktop-rag-owner-20261126]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-rag-owner-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical synthetic directory and exact source
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-rag-owner'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class RagFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([RagFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'rag-review' | Out-Null
+          git rev-parse HEAD | Set-Content 'rag-review/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'rag-review/tree.txt'
+      - name: Reproduce frozen old RAG upsert stage read and inline identity defects
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '41b6609960315f1ec5c5615fc8f80c26570ea956'
+          $files = @(
+            'app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt',
+            'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/RagRepository.kt',
+            'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt',
+            'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt'
+          )
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_RAG_SOURCE_UNAVAILABLE' }
+          $cases = @(
+            @{ module = 'sharedCore'; cls = 'com.example.chatbar.domain.rag.RagOwnershipGuardTest'; test = 'late foreign ordinary upsert refuses whole preflight before earlier write'; name = 'foreign-upsert' },
+            @{ module = 'sharedCore'; cls = 'com.example.chatbar.domain.rag.RagOwnershipGuardTest'; test = 'missing staged record refuses strict replacement before moving originals'; name = 'missing-stage' },
+            @{ module = 'sharedCore'; cls = 'com.example.chatbar.domain.rag.RagOwnershipGuardTest'; test = 'corrupt selected row refuses replacement without treating it absent'; name = 'corrupt-read' },
+            @{ module = 'desktopApp'; cls = 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'; test = 'legacy actual restore reuses fixed target RAG identity and keeps foreign original'; name = 'inline-identity' }
+          )
+          try {
+            git restore --source=$prior --worktree -- $files
+            $files | Set-Content 'rag-review/negative-coupled-files.txt'
+            foreach ($case in $cases) {
+              Push-Location app
+              try {
+                .\gradlew.bat ":$($case.module):test" --tests "$($case.cls).$($case.test)" -PdesktopTestHeadless=true --no-daemon --stacktrace
+                $negativeExit = $LASTEXITCODE
+              } finally { Pop-Location }
+              $path = "app/$($case.module)/build/test-results/test/TEST-$($case.cls).xml"
+              [xml]$report = Get-Content -Raw -LiteralPath $path
+              if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_RAG_ASSERTION_NOT_REACHED' }
+              if ($report.testsuite.testcase.failure.type -notin @('java.lang.AssertionError', 'org.junit.ComparisonFailure')) { throw 'PRIOR_RAG_WRONG_FAILURE' }
+              if ($report.testsuite.testcase.name -ne $case.test) { throw 'PRIOR_RAG_WRONG_METHOD' }
+              Copy-Item -LiteralPath $path -Destination "rag-review/negative-$($case.name).xml"
+              $prior | Set-Content "rag-review/negative-$($case.name)-source.txt"
+            }
+          } finally {
+            git restore --source=HEAD --worktree -- $files
+            git diff --exit-code -- $files
+            if ($LASTEXITCODE -ne 0) { throw 'RAG_CURRENT_SOURCE_NOT_RESTORED' }
+          }
+      - name: Verify guarded RAG atomic rows namespace and storage regressions
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.rag.RagOwnershipGuardTest'
+          --tests 'com.example.chatbar.domain.chat.SaveSlotRagIdentityTest'
+          --tests 'com.example.chatbar.domain.chat.SessionCopyPolicyTest'
+          --tests 'com.example.chatbar.domain.rag.RagCoreContractTest'
+          --tests 'com.example.chatbar.domain.rag.RagSourcePlanTest'
+          --tests 'com.example.chatbar.data.local.JsonFileStorageTest'
+          --tests 'com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest'
+          --tests 'com.example.chatbar.data.local.JsonFileStorageOperationGateTest'
+          --tests 'com.example.chatbar.data.repository.ChatMessageOwnerScopeTest'
+          --tests 'com.example.chatbar.data.repository.ChatDraftImagesTest'
+          --no-daemon --stacktrace
+      - name: Verify actual restore journals historical custody and current draft media owners
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopSessionCommitJournalTest'
+          --tests 'com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest'
+          --tests 'com.example.chatbar.desktop.DesktopFullBackupMappingTest'
+          --tests 'com.example.chatbar.desktop.DesktopAlternativeUnlinkRecoveryTest'
+          --tests 'com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopDraftImageBackupTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatDraftPersistenceTest'
+          --tests 'com.example.chatbar.desktop.DesktopDraftRetryTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-rag-owner-original-results
+          path: |
+            rag-review/
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/

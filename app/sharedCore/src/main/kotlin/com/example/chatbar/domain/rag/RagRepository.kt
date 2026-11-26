@@ -18,8 +18,18 @@ class RagRepository(private val storage: JsonFileStorage) {
      * 批量保存向量块
      */
     suspend fun saveChunks(chunks: List<VectorChunk>) {
+        chunks.forEach { requireIdentity(it.id, it) }
         val entityMap = chunks.associate { it.id to it }
-        storage.saveAllUncached(VectorChunkStorageContract.ENTITY_TYPE, entityMap, VectorChunk.serializer())
+        require(entityMap.size == chunks.size) { "RAG 批次包含重复标识，未覆盖原件" }
+        storage.saveAllUncachedGuarded(VectorChunkStorageContract.ENTITY_TYPE, entityMap, VectorChunk.serializer()) { key, current, replacement ->
+            requireIdentity(key, current)
+            current.sourceType == replacement.sourceType && current.sourceId == replacement.sourceId &&
+                (current.sourceType != ChunkSourceType.DOCUMENT || current.metadata["originalDocId"] == replacement.metadata["originalDocId"])
+        }
+    }
+
+    private fun requireIdentity(key: String, chunk: VectorChunk) {
+        require(chunk.id == key && key.isNotBlank() && chunk.sourceId.isNotBlank()) { "RAG 记录缺少一致的原标识或来源" }
     }
 
     suspend fun getChunkById(chunkId: String): VectorChunk? =
@@ -110,11 +120,11 @@ class RagRepository(private val storage: JsonFileStorage) {
         sessionId: String,
         producer: suspend (emit: suspend (VectorChunk) -> Unit) -> Unit
     ) {
-        storage.replaceWhereStreamingUncached(
+        storage.replaceWhereKeyedStreamingUncachedStrict(
             entityType = VectorChunkStorageContract.ENTITY_TYPE,
             serializer = VectorChunk.serializer(),
-            predicate = { chunk ->
-                chunk.sourceType == ChunkSourceType.CHAT_MEMORY && chunk.sourceId == sessionId
+            predicate = { key, chunk ->
+                (chunk.sourceType == ChunkSourceType.CHAT_MEMORY && chunk.sourceId == sessionId).also { if (it) requireIdentity(key, chunk) }
             }
         ) { emit ->
             producer { chunk ->
@@ -122,6 +132,7 @@ class RagRepository(private val storage: JsonFileStorage) {
                     sourceType = ChunkSourceType.CHAT_MEMORY,
                     sourceId = sessionId
                 )
+                requireIdentity(normalized.id, normalized)
                 emit(normalized.id, normalized)
             }
         }

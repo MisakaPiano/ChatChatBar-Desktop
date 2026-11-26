@@ -82,7 +82,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
                     else requireNotNull(imagePaths[reference]) { "旧存档图片缺少内嵌资源；不读取外部路径" }
                 slot.messages.forEach { message(it.copy(sessionId = target.id, images = it.images.map(::image),
                     generatedImageMetadata = it.generatedImageMetadata.map { meta -> meta.copy(imagePath = image(meta.imagePath)) })) }
-                slot.vectorChunks.forEach { chunk(it.copy(id = UUID.randomUUID().toString(), sourceId = target.id)) }
+                slot.vectorChunks.forEach { chunk(SaveSlotRagIdentity.restore(it, target.id)) }
                 background = slot.chatBackground?.let(::image)
                 playerAvatar = slot.desktopPlayerAvatar?.let(::image)
                 val audioResources = linkedMapOf<String, SaveSlotAudioResource>()

@@ -5,6 +5,8 @@ description: Maintain ChatBar conversation SaveSlot creation, listing, loading, 
 
 # ChatBar SaveSlot
 
+Shared `SaveSlotRagIdentity.restore` uses the fixed v8 target-session + NUL + archived-chunk-ID UUID namespace for both ZIP reading and Desktop legacy inline restoration. Only chunk id/sourceId change in that helper; existing `SessionCopyPolicy` message-reference mapping and Desktop metadata normalization retain their owners. Repeated restoration of one original keeps the same target chunk IDs, while source rows and original package bytes remain independent. The object is public solely for the sharedCore/Desktop module boundary.
+
 Reply repair checkpoints travel with ChatMessage's legacy single slot plus `otherFormatRepairNotices`; version IDs remain stable through archive restore and session duplication. `DesktopSaveSlotServiceTest` covers independent A redo/B restore after actual export/import and cold reads.
 
 Desktop player role association and per-session avatar use optional `desktopPlayerRole`/`desktopPlayerAvatar` on both ChatSession and SaveSlot. Shared `SaveSlotSessionPolicy` carries the role; restore accepts the separately materialized player-avatar reference. `SaveSlotPackageStorage` counts/packages/validates that image and exposes `materializePlayerAvatar`; Desktop Inspector, capture and RestorePlan include it in the existing media proof and transaction. Image policy NONE omits the avatar image, preserving the explicit role. Global player avatar remains a whole-app setting, not a conversation archive field.

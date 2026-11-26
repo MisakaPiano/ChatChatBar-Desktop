@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.chat.*
+import com.example.chatbar.domain.rag.RagRepository
 import java.awt.image.BufferedImage
 import java.nio.file.*
 import javax.imageio.ImageIO
@@ -12,6 +13,51 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `legacy actual restore reuses fixed target RAG identity and keeps foreign original`(): Unit = runBlocking {
+        verifyTargetRagRestore(zip = false)
+    }
+
+    @Test fun `v8 actual restore retains fixed RAG identity and original package`(): Unit = runBlocking {
+        verifyTargetRagRestore(zip = true)
+    }
+
+    private suspend fun verifyTargetRagRestore(zip: Boolean) {
+        Fixture().use { f ->
+            f.seed()
+            val source = VectorChunk("archived", ChunkSourceType.CHAT_MEMORY, "s", messageId = f.message.id,
+                content = "synthetic preserved RAG body", embedding = listOf(1f, 0f),
+                metadata = mapOf("sessionId" to "s", "messageIds" to f.message.id, "originalEvidence" to "unchanged"), createdAt = 1)
+            val repo = RagRepository(f.storage); repo.saveChunks(listOf(source))
+            val originalChunk = Files.readAllBytes(f.root.resolve("entities/vector_chunks/archived.json"))
+            val service = f.service(); val file = f.root.resolve(if (zip) "source-v8.cbsave" else "source-inline.cbsave")
+            if (zip) {
+                val slot = service.create("s", "Synthetic source", SaveSlotImagePolicy.NONE, false)
+                service.export(slot.id, "s", file)
+            } else {
+                val slot = SaveSlot(schemaVersion = 7, id = "legacy", sessionId = "s", name = "Synthetic source", createdAt = 1,
+                    messages = listOf(f.message.copy(images = emptyList(), generatedImageMetadata = emptyList())), vectorChunks = listOf(source))
+                Files.writeString(file, f.storage.json.encodeToString(SaveSlot.serializer(), slot))
+            }
+            val originalPackage = Files.readAllBytes(file)
+            val target = f.session.copy(id = "foreign", title = "Independent target")
+            f.chats.createSession(target)
+            val before = DesktopSessionInventory(f.root).read("s")
+            val imported = service.import(file, target.id)
+            repeat(2) {
+                service.restore(imported.id, target.id)
+                val cold = RagRepository(JsonFileStorage(f.root)).getAllChunksForSession(target.id).single()
+                assertEquals("36564814-e56d-3722-8d59-bb101ae39b82", cold.id)
+                assertEquals(target.id, cold.sourceId); assertEquals(source.content, cold.content)
+                assertEquals(source.embedding, cold.embedding); assertEquals(source.createdAt, cold.createdAt)
+                assertEquals(source.metadata["originalEvidence"], cold.metadata["originalEvidence"])
+                assertEquals(f.chats.getMessages(target.id).single().id, cold.messageId)
+                assertContentEquals(originalChunk, Files.readAllBytes(f.root.resolve("entities/vector_chunks/archived.json")))
+                assertEquals(before, DesktopSessionInventory(f.root).read("s"))
+                assertContentEquals(originalPackage, Files.readAllBytes(file))
+            }
+        }
+    }
+
     @Test fun `actual parent save restore leaves prefix neighbour original session and message untouched`() = runBlocking {
         Fixture().use { f ->
             f.seed()

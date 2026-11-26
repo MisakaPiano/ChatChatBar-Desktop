@@ -151,10 +151,7 @@ class SaveSlotPackageStorage(
             emit: suspend (VectorChunk) -> Unit
         ) {
             forEachJsonLine(RAG_ENTRY, VectorChunk.serializer()) { chunk ->
-                val restoredId = UUID.nameUUIDFromBytes(
-                    "$targetSessionId\u0000${chunk.id}".toByteArray(Charsets.UTF_8)
-                ).toString()
-                emit(chunk.copy(id = restoredId, sourceId = targetSessionId))
+                emit(SaveSlotRagIdentity.restore(chunk, targetSessionId))
             }
         }
 

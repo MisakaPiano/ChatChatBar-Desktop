@@ -768,6 +768,23 @@ class JsonFileStorage(
         }
     }
 
+    /** Preflight the whole key set under its original type lock; writes stay per-file atomic. */
+    internal suspend fun <T : Any> saveAllUncachedGuarded(
+        entityType: String, entities: Map<String, T>, serializer: KSerializer<T>,
+        acceptsExisting: (String, T, T) -> Boolean
+    ) = mutexFor(entityType).withLock {
+        val replacements = entities.toMap()
+        withContext(Dispatchers.IO) {
+            replacements.forEach { (id, replacement) ->
+                val existing = readGuardedExisting(entityFile(entityType, id), entityType, serializer)
+                check(existing == null || acceptsExisting(id, existing, replacement)) { "RAG 存储键属于其它来源，未覆盖原件" }
+            }
+            replacements.forEach { (id, replacement) ->
+                writeJsonFile(entityFile(entityType, id), replacement, serializer)
+            }
+        }
+    }
+
     /** Only an explicitly absent leaf authorizes creation; existing bytes must decode and match the owner. */
     @OptIn(ExperimentalSerializationApi::class)
     private fun <T : Any> readGuardedExisting(file: File, entityType: String, serializer: KSerializer<T>): T? {
@@ -893,6 +910,15 @@ class JsonFileStorage(
                 count++
             }
 
+            // Validate the complete prepared set before any original is moved aside.
+            val stagedFiles = checkNotNull(staging.listFiles()) { "无法完整读取实体暂存目录" }
+            check(stagedFiles.map { it.name }.toSet() == emittedIds.map { "$it.json" }.toSet() && stagedFiles.size == emittedIds.size) {
+                "实体暂存文件不完整，未替换原件"
+            }
+            stagedFiles.forEach { file ->
+                val attributes = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                check(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther) { "实体暂存文件类型无效" }
+            }
             val currentFiles = checkNotNull(directory.listFiles { file -> file.extension == "json" && currentMatches(file) }) {
                 "无法完整读取替换目录"
             }
@@ -910,12 +936,11 @@ class JsonFileStorage(
                 currentFiles.forEach { file ->
                     Files.move(file.toPath(), File(backup, file.name).toPath())
                 }
-                checkNotNull(staging.listFiles { file -> file.isFile && file.extension == "json" }) { "无法读取已准备的记录" }
-                    .forEach { file ->
-                        val target = File(directory, file.name)
-                        Files.move(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                        installed += target
-                    }
+                stagedFiles.forEach { file ->
+                    val target = File(directory, file.name)
+                    Files.move(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    installed += target
+                }
             } catch (error: Throwable) {
                 installed.forEach(File::delete)
                 try {
