@@ -264,24 +264,24 @@ class ChatRepository internal constructor(
 
     /** Inspector-safe message read that never creates or repairs the persisted message index. */
     suspend fun getMessagesReadOnly(sessionId: String): List<ChatMessage> =
-        storage.mapByIdPrefixUncached(
-            entityType = MESSAGE_TYPE,
-            prefix = "${sessionId}_",
-            serializer = ChatMessage.serializer(),
-            transform = { it },
-        ).sortedWith(ChatMessage.TimelineComparator)
+        storage.mapByIdPrefixKeyedUncachedStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer()) { key, message ->
+            if (!ownsMessage(key, message, sessionId)) null else message
+        }.sortedWith(ChatMessage.TimelineComparator)
 
-    /** Complete strict selected-session projection without rewriting its message index. */
-    suspend fun <T> mapMessagesReadOnlyStrict(sessionId: String, transform: (ChatMessage) -> T): List<T> =
+    /** A physical prefix may also contain a child session; decoded owner is authoritative. */
+    suspend fun <T : Any> mapMessagesReadOnlyStrict(sessionId: String, transform: (ChatMessage) -> T): List<T> =
         messageAppendMutex.withDataAccess {
             require(getSession(sessionId) != null) { "会话已不存在" }
-            storage.mapEntitiesByPrefixStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer(),
-                validate = { key, message ->
-                    require(message.sessionId == sessionId && key == messageStorageId(sessionId, message.id)) {
-                        "会话消息归属不一致，未显示不完整图库"
-                    }
-                }, transform = transform)
+            storage.mapByIdPrefixKeyedUncachedStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer()) { key, message ->
+                if (!ownsMessage(key, message, sessionId)) null else transform(message)
+            }
         }
+
+    private fun ownsMessage(key: String, message: ChatMessage, sessionId: String): Boolean {
+        if (message.sessionId != sessionId) return false
+        check(key == messageStorageId(sessionId, message.id)) { "消息存储键与会话归属不一致" }
+        return true
+    }
 
     /** 顺序分批读取会话消息；调用方每次只需持有一个小批次。 */
     suspend fun forEachMessage(
@@ -388,7 +388,10 @@ class ChatRepository internal constructor(
     ): List<ChatMessage> = storage.loadByIdsUncached(
         MESSAGE_TYPE,
         entries.map { messageStorageId(sessionId, it.messageId) },
-        ChatMessage.serializer()
+        ChatMessage.serializer(),
+        validate = { key, message ->
+            check(ownsMessage(key, message, sessionId)) { "消息目录归属不一致" }
+        },
     ).sortedWith(ChatMessage.TimelineComparator)
 
     private suspend fun loadMessageIndex(sessionId: String): ChatMessageIndex {
@@ -403,7 +406,8 @@ class ChatRepository internal constructor(
                 ChatMessageIndex.serializer()
             )
             if (
-                stored != null &&
+                stored != null && stored.sessionId == sessionId && stored.ownerScopeVersion == 1 &&
+                stored.entries.map { it.messageId }.toSet().size == stored.entries.size &&
                 stored.fileCount == signature.count &&
                 (stored.fileFingerprint == 0L || stored.fileFingerprint == signature.fingerprint)
             ) {
@@ -415,12 +419,9 @@ class ChatRepository internal constructor(
 
     private suspend fun rebuildMessageIndexLocked(sessionId: String): ChatMessageIndex {
         val prefix = "${sessionId}_"
-        val entries = storage.mapByIdPrefixUncached(
-            MESSAGE_TYPE,
-            prefix,
-            ChatMessage.serializer(),
-            ChatMessage::toIndexEntry
-        ).sortedWith(indexComparator)
+        val entries = storage.mapByIdPrefixKeyedUncachedStrict(MESSAGE_TYPE, prefix, ChatMessage.serializer()) { key, message ->
+            if (!ownsMessage(key, message, sessionId)) null else message.toIndexEntry()
+        }.sortedWith(indexComparator)
         return writeMessageIndexLocked(sessionId, entries)
     }
 
@@ -446,7 +447,8 @@ class ChatRepository internal constructor(
             fileCount = entries.size,
             // App-owned mutations write the source and its updated index under the same ownership.
             fileFingerprint = 0L,
-            updatedAt = updatedAt
+            updatedAt = updatedAt,
+            ownerScopeVersion = 1,
         )
 
     private suspend fun updateMessageIndex(
@@ -524,11 +526,9 @@ class ChatRepository internal constructor(
     }
 
     suspend fun getMessage(messageId: String, sessionId: String): ChatMessage? {
-        return storage.loadEntity(
-            MESSAGE_TYPE,
-            messageStorageId(sessionId, messageId),
-            ChatMessage.serializer()
-        )
+        return storage.loadEntity(MESSAGE_TYPE, messageStorageId(sessionId, messageId), ChatMessage.serializer())?.also {
+            check(it.sessionId == sessionId && it.id == messageId) { "消息存储键属于其他记录" }
+        }
     }
 
     suspend fun addMessage(message: ChatMessage): ChatMessage = messageAppendMutex.withDataAccess {
@@ -630,12 +630,8 @@ class ChatRepository internal constructor(
 
     private suspend fun saveMessageRecord(message: ChatMessage, updateIndex: Boolean = true) {
         val index = if (updateIndex) loadMessageIndex(message.sessionId) else null
-        storage.saveEntityUncached(
-            MESSAGE_TYPE,
-            messageStorageId(message.sessionId, message.id),
-            message,
-            ChatMessage.serializer()
-        )
+        storage.saveEntityUncachedGuarded(MESSAGE_TYPE, messageStorageId(message.sessionId, message.id), message,
+            ChatMessage.serializer()) { it.sessionId == message.sessionId && it.id == message.id }
         if (index != null) {
             updateMessageIndex(message.sessionId, index) { entries ->
                 (entries.filterNot { it.messageId == message.id } + message.toIndexEntry())
@@ -977,7 +973,9 @@ class ChatRepository internal constructor(
     private suspend fun deleteMessageLocked(messageId: String, sessionId: String) {
         val removed = getMessage(messageId, sessionId)
         val index = loadMessageIndex(sessionId)
-        storage.deleteEntityUncached(MESSAGE_TYPE, messageStorageId(sessionId, messageId))
+        storage.deleteEntityUncachedGuarded(MESSAGE_TYPE, messageStorageId(sessionId, messageId), ChatMessage.serializer()) {
+            it.sessionId == sessionId && it.id == messageId
+        }
         val remainingEntries = index.entries.filterNot { it.messageId == messageId }
         updateMessageIndex(sessionId, index) { remainingEntries }
         val latest = remainingEntries.lastOrNull()?.let { getMessage(it.messageId, sessionId) }
@@ -1007,9 +1005,12 @@ class ChatRepository internal constructor(
     }
 
     private suspend fun deleteMessagesForSessionLocked(sessionId: String): Int {
-        val deleted = storage.deleteByIdPrefixUncached(MESSAGE_TYPE, "${sessionId}_")
+        // A partial deletion must not leave a reusable derived transcript.
         storage.deleteEntityUncached(MESSAGE_INDEX_TYPE, sessionId)
         messageIndexes.remove(sessionId)
+        val deleted = storage.deleteWhereKeyedUncachedStrict(MESSAGE_TYPE, ChatMessage.serializer()) { key, message ->
+            ownsMessage(key, message, sessionId)
+        }
         storage.deleteEntity<ChatMessageOrderBackup>(MESSAGE_ORDER_BACKUP_TYPE, sessionId)
         return deleted
     }
@@ -1020,9 +1021,13 @@ class ChatRepository internal constructor(
             val normalized = if (message.sessionId == sessionId) message else message.copy(sessionId = sessionId)
             messageStorageId(sessionId, normalized.id) to normalized
         }
-        deleteMessagesForSessionLocked(sessionId)
+        require(entities.size == messages.size) { "替换消息身份重复，未改原件" }
+        storage.replaceWhereKeyedStreamingUncachedStrict(MESSAGE_TYPE, ChatMessage.serializer(),
+            { key, message -> ownsMessage(key, message, sessionId) }) { emit ->
+            entities.forEach { (key, value) -> emit(key, value) }
+        }
+        storage.deleteEntity<ChatMessageOrderBackup>(MESSAGE_ORDER_BACKUP_TYPE, sessionId)
         deleteScrollPosition(sessionId)
-        storage.saveAllUncached(MESSAGE_TYPE, entities, ChatMessage.serializer())
         messageIndexMutex.withDataAccess {
             writeMessageIndexLocked(
                 sessionId,
@@ -1053,10 +1058,10 @@ class ChatRepository internal constructor(
         var latest: ChatMessage? = null
         var maxSourceOrder = 0L
         var maxTimelineTurn = 0L
-        storage.replaceByIdPrefixStreamingUncached(
+        storage.replaceWhereKeyedStreamingUncachedStrict(
             entityType = MESSAGE_TYPE,
-            prefix = "${sessionId}_",
-            serializer = ChatMessage.serializer()
+            serializer = ChatMessage.serializer(),
+            predicate = { key, message -> ownsMessage(key, message, sessionId) }
         ) { emit ->
             producer { message ->
                 val normalized = if (message.sessionId == sessionId) {
@@ -1349,8 +1354,8 @@ class ChatRepository internal constructor(
         initialize()
         val sessions = _sessions.value.filter { it.characterCardId == task.characterCardId }.associateBy { it.id }
         val messages = sessions.keys.associateWith { sessionId ->
-            storage.readEntitiesByPrefixStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer()) { storageId, message ->
-                require(storageId == messageStorageId(sessionId, message.id)) { "历史人物改名存储归属不匹配" }
+            storage.mapByIdPrefixKeyedUncachedStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer()) { storageId, message ->
+                if (!ownsMessage(storageId, message, sessionId)) null else message
             }.also { rows ->
                 require(rows.all { it.sessionId == sessionId } && rows.map { it.id }.distinct().size == rows.size) { "历史人物改名消息归属不匹配" }
             }.sortedWith(ChatMessage.TimelineComparator).associateBy(ChatMessage::id)

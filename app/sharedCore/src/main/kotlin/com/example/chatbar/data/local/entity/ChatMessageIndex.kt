@@ -1,6 +1,8 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 
 /** 轻量消息目录。正文仍只存在独立 ChatMessage 文件。 */
 @Serializable
@@ -25,13 +27,16 @@ data class ChatMessageIndexEntry(
         }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class ChatMessageIndex(
     val sessionId: String,
     val entries: List<ChatMessageIndexEntry> = emptyList(),
     val fileCount: Int = 0,
     val fileFingerprint: Long = 0,
-    val updatedAt: Long = 0
+    val updatedAt: Long = 0,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val ownerScopeVersion: Int = 0,
 )
 
 data class ChatMessagePage(

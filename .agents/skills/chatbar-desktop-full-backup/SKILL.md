@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+`chat_message_indexes.ownerScopeVersion` is a portable typed field, not a SaveSlot version. The shared default0 is omitted;1 denotes a local owner-filtered build. `DesktopMergeDestinationPlan` invalidates incoming proof and `DesktopFullBackupMapping` resets it again before installed materialization; retained computer-only indexes keep their existing authority. The repository rebuilds old/unknown proof rather than trusting matching counts/fingerprints. `DesktopMessageOwnerIndexTransferTest` checks strict admission, source-byte preservation and mapping/merge invalidation.
+
 ChatMessage repair checkpoints include the legacy single slot and optional `otherFormatRepairNotices`. Modern export/staging retains both without rebinding stable alternative IDs; `DesktopFullBackupServiceTest` checks independent A redo/B restore after authenticated inspection. This does not claim older official versions preserve the added optional field.
 
 Generated-voice nonnull `desktopVersionOwnershipUncertain` is Desktop-only custody metadata and participates in the existing Desktop-extension disclosure. Current Entity/SaveSlot serialization retains it; absent/null is omitted even with encodeDefaults, preserving existing voice custody hashes. An older Android rewrite may drop the field; a later Desktop read treats absence as unknown and preserves the recording, never as confirmed deletion authority.

@@ -673,20 +673,48 @@ class JsonFileStorage(
             }
         }
 
+    /** Decode one candidate at a time; a filename prefix is only a search bound, never owner proof. */
+    @OptIn(ExperimentalSerializationApi::class)
+    internal suspend fun <T : Any, R : Any> mapByIdPrefixKeyedUncachedStrict(
+        entityType: String, prefix: String, serializer: KSerializer<T>, transform: (String, T) -> R?
+    ): List<R> = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            val directory = strictInventoryDirectory(entityType, {}) ?: return@withContext emptyList()
+            val strict = Json(json) { ignoreUnknownKeys = false }
+            Files.newDirectoryStream(directory).use { paths ->
+                paths.filter { it.fileName.toString().endsWith(".json") && it.fileName.toString().startsWith(prefix) }
+                    .sortedBy { it.fileName.toString() }.mapNotNull { path ->
+                        currentCoroutineContext().ensureActive()
+                        val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                        check(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther)
+                        Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).buffered().use { input ->
+                            transform(path.fileName.toString().removeSuffix(".json"), strict.decodeFromStream(serializer, input))
+                        }
+                    }
+            }
+        }
+    }
+
     /** 按明确存储 ID 读取一批实体；结果顺序与 ids 一致。 */
     @OptIn(ExperimentalSerializationApi::class)
     suspend fun <T : Any> loadByIdsUncached(
         entityType: String,
         ids: List<String>,
-        serializer: KSerializer<T>
+        serializer: KSerializer<T>,
+        validate: ((String, T) -> Unit)? = null,
     ): List<T> = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
             ids.mapNotNull { id ->
                 val file = entityFile(entityType, id)
-                if (!file.isFile) return@mapNotNull null
-                readOrNull(entityType) {
-                    openJsonInput(entityType, file).use { input ->
-                        json.decodeFromStream(serializer, input)
+                if (validate != null) {
+                    val value = readGuardedExisting(file, entityType, serializer)
+                    check(value != null) { "Indexed entity is missing" }
+                    validate(id, value)
+                    value
+                } else {
+                    if (!file.isFile) return@mapNotNull null
+                    readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input -> json.decodeFromStream(serializer, input) }
                     }
                 }
             }
@@ -699,11 +727,10 @@ class JsonFileStorage(
         prefix: String
     ): FileSetSignature = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            val files = entityDir(entityType)
+            val files = checkNotNull(entityDir(entityType)
                 .listFiles { file ->
                     file.extension == "json" && file.nameWithoutExtension.startsWith(prefix)
-                }
-                .orEmpty()
+                }) { "无法完整读取消息目录" }
                 .sortedBy { it.name }
             var fingerprint = 1_125_899_906_842_597L
             files.forEach { file ->
@@ -739,6 +766,66 @@ class JsonFileStorage(
                 writeJsonFile(entityFile(entityType, id), entity, serializer)
             }
         }
+    }
+
+    /** Only an explicitly absent leaf authorizes creation; existing bytes must decode and match the owner. */
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun <T : Any> readGuardedExisting(file: File, entityType: String, serializer: KSerializer<T>): T? {
+        try {
+            val attributes = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+            check(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther) { "Unsafe entity target" }
+            return openJsonInput(entityType, file).use { json.decodeFromStream(serializer, it) }
+        } catch (error: NoSuchFileException) {
+            if (Files.notExists(file.toPath(), LinkOption.NOFOLLOW_LINKS)) return null
+            throw error
+        }
+    }
+
+    internal suspend fun <T : Any> saveEntityUncachedGuarded(
+        entityType: String, id: String, value: T, serializer: KSerializer<T>, acceptsExisting: (T) -> Boolean
+    ) = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            val file = entityFile(entityType, id)
+            val existing = readGuardedExisting(file, entityType, serializer)
+            check(existing == null || acceptsExisting(existing)) { "消息存储键属于其他记录，未覆盖原件" }
+            writeJsonFile(file, value, serializer)
+        }
+    }
+
+    internal suspend fun <T : Any> deleteEntityUncachedGuarded(
+        entityType: String, id: String, serializer: KSerializer<T>, acceptsExisting: (T) -> Boolean
+    ) = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            val file = entityFile(entityType, id)
+            val existing = readGuardedExisting(file, entityType, serializer)
+            check(existing == null || acceptsExisting(existing)) { "消息存储键属于其他记录，未删除原件" }
+            if (existing != null) Files.delete(file.toPath())
+        }
+    }
+
+    /** Read all candidates before the first deletion; foreign rows never become rollback authority. */
+    @OptIn(ExperimentalSerializationApi::class)
+    internal suspend fun <T : Any> deleteWhereKeyedUncachedStrict(
+        entityType: String, serializer: KSerializer<T>, predicate: (String, T) -> Boolean
+    ): Int = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            val files = checkNotNull(entityDir(entityType).listFiles { it.extension == "json" }) { "无法完整读取记录目录" }
+            val selected = files.filter { file ->
+                val value = checkNotNull(readGuardedExisting(file, entityType, serializer))
+                predicate(file.nameWithoutExtension, value)
+            }
+            selected.count { Files.deleteIfExists(it.toPath()) }
+        }
+    }
+
+    /** Selection and replacement-key authority share the original storage mutex and publication journal. */
+    internal suspend fun <T : Any> replaceWhereKeyedStreamingUncachedStrict(
+        entityType: String, serializer: KSerializer<T>, predicate: (String, T) -> Boolean,
+        producer: suspend (emit: suspend (String, T) -> Unit) -> Unit
+    ): Int = mutexFor(entityType).withLock {
+        replaceMatchingFilesStreamingLocked(entityType, serializer, { file ->
+            predicate(file.nameWithoutExtension, checkNotNull(readGuardedExisting(file, entityType, serializer)))
+        }, producer)
     }
 
     /**
@@ -806,17 +893,24 @@ class JsonFileStorage(
                 count++
             }
 
-            val currentFiles = directory
-                .listFiles { file -> file.isFile && file.extension == "json" && currentMatches(file) }
-                .orEmpty()
+            val currentFiles = checkNotNull(directory.listFiles { file -> file.extension == "json" && currentMatches(file) }) {
+                "无法完整读取替换目录"
+            }
+            val currentNames = currentFiles.mapTo(hashSetOf()) { it.name }
+            // Refuse a key belonging to an unselected owner before moving any old file.
+            emittedIds.forEach { id ->
+                val target = File(directory, "$id.json")
+                if (!Files.notExists(target.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+                    check(target.name in currentNames) { "替换键属于其他记录，未覆盖原件" }
+                }
+            }
             check(backup.mkdirs()) { "无法创建实体备份目录" }
             val installed = mutableListOf<File>()
             try {
                 currentFiles.forEach { file ->
                     Files.move(file.toPath(), File(backup, file.name).toPath())
                 }
-                staging.listFiles { file -> file.isFile && file.extension == "json" }
-                    .orEmpty()
+                checkNotNull(staging.listFiles { file -> file.isFile && file.extension == "json" }) { "无法读取已准备的记录" }
                     .forEach { file ->
                         val target = File(directory, file.name)
                         Files.move(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -825,7 +919,7 @@ class JsonFileStorage(
             } catch (error: Throwable) {
                 installed.forEach(File::delete)
                 try {
-                    backup.listFiles().orEmpty().forEach { file ->
+                    checkNotNull(backup.listFiles()) { "无法读取回滚记录" }.forEach { file ->
                         Files.move(file.toPath(), File(directory, file.name).toPath(), StandardCopyOption.REPLACE_EXISTING)
                     }
                 } catch (restoreError: Throwable) {

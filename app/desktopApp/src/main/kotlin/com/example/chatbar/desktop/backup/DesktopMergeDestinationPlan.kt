@@ -176,7 +176,8 @@ internal class DesktopMergeDestinationPlan private constructor(
                         }.toString(Charsets.UTF_8)).jsonObject
                         mapped = JsonObject(mapped + mappedMedia)
                     }
-                    if (record.type == "chat_message_indexes" && "fileFingerprint" in mapped) mapped = JsonObject(mapped + ("fileFingerprint" to JsonPrimitive(0)))
+                    if (record.type == "chat_message_indexes") mapped = JsonObject(mapped + mapOf(
+                        "fileFingerprint" to JsonPrimitive(0), "ownerScopeVersion" to JsonPrimitive(0)))
                     if (record in packageSlots || packageSlots.any { it.relative == record.relative }) {
                         val reference = mapped.getValue("packageRef").jsonObject
                         mapped = JsonObject(mapped + ("packageRef" to JsonObject(reference + mapOf(

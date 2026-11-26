@@ -12,6 +12,27 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `actual parent save restore leaves prefix neighbour original session and message untouched`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val parent = requireNotNull(f.chats.getSession("s"))
+            f.chats.createSession(parent.copy(id = "s_child", title = "Synthetic child"))
+            val child = f.message.copy(id = "m", sessionId = "s_child", content = "foreign child")
+            f.chats.addMessage(child)
+            val foreignSession = f.root.resolve("entities/chat_sessions/s_child.json")
+            val foreignMessage = f.root.resolve("entities/chat_messages/s_child_m.json")
+            val originalSession = Files.readAllBytes(foreignSession)
+            val originalMessage = Files.readAllBytes(foreignMessage)
+            val service = f.service()
+            val slot = service.create("s", "Synthetic owner scope", SaveSlotImagePolicy.NONE, false)
+            f.chats.updateMessage(f.message.copy(content = "changed parent"))
+            service.restore(slot.id, "s")
+            assertContentEquals(originalSession, Files.readAllBytes(foreignSession))
+            assertContentEquals(originalMessage, Files.readAllBytes(foreignMessage))
+            assertEquals(listOf("s"), ChatRepository(JsonFileStorage(f.root)).getMessagesReadOnly("s").map { it.sessionId }.distinct())
+        }
+    }
+
     @Test fun `per version repair points survive actual slot export import restore duplication and cold reads`() = runBlocking {
         Fixture().use { f ->
             f.seed()

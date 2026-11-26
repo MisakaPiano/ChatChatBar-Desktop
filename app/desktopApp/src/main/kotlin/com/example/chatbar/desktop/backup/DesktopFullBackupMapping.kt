@@ -255,7 +255,9 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             if (relative.startsWith("entities/")) {
                 entityType = DesktopBackupPolicy.entityType(relative)
                 val value = DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false, wireVersionCode, modern = wireVersionCode >= 85)
-                scratch.write(target, DesktopBackupPolicy.mapResources(value, ::mappedResource))
+                val incoming = if (entityType == "chat_message_indexes") JsonObject(value + mapOf(
+                    "ownerScopeVersion" to JsonPrimitive(0), "fileFingerprint" to JsonPrimitive(0))) else value
+                scratch.write(target, DesktopBackupPolicy.mapResources(incoming, ::mappedResource))
             } else scratch.copy(file, target, DesktopBackupPolicy.MAX_FILE)
             files[destination] = target
         }
