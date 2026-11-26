@@ -32,7 +32,7 @@ class DesktopSaveSlotServiceTest {
             val service = f.service(); val file = f.root.resolve(if (zip) "source-v8.cbsave" else "source-inline.cbsave")
             if (zip) {
                 val slot = service.create("s", "Synthetic source", SaveSlotImagePolicy.NONE, false)
-                service.export(slot.id, "s", file)
+                service.export(slot.id, file)
             } else {
                 val slot = SaveSlot(schemaVersion = 7, id = "legacy", sessionId = "s", name = "Synthetic source", createdAt = 1,
                     messages = listOf(f.message.copy(images = emptyList(), generatedImageMetadata = emptyList())), vectorChunks = listOf(source))

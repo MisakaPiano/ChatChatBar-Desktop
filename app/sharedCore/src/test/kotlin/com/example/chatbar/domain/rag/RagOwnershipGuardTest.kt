@@ -58,6 +58,23 @@ class RagOwnershipGuardTest {
             assertContentEquals(before, Files.readAllBytes(file(root, "x")))
         }
     }
+    @Test fun `physical upsert keys cannot escape their directory and empty save creates no authority`() = runBlocking {
+        fixture { root, _, repo ->
+            repo.saveChunks(emptyList())
+            assertFalse(Files.exists(root.resolve("entities/vector_chunks")))
+            for (id in listOf("../escape", "nested/escape", "./escape")) assertFails { repo.saveChunks(listOf(chunk(id))) }
+            assertFalse(Files.exists(root.resolve("entities/escape.json")))
+            assertFalse(Files.exists(root.resolve("entities/vector_chunks/nested")))
+        }
+    }
+    @Test fun `batch physical aliases cannot overwrite a different logical owner`() = runBlocking {
+        val aliases = mutableListOf("./x")
+        if (System.getProperty("os.name").startsWith("Windows")) aliases += "X"
+        for (alias in aliases) fixture { root, _, repo ->
+            assertFails { repo.saveChunks(listOf(chunk("x", "a"), chunk(alias, "b"))) }
+            assertFalse(Files.exists(file(root, "x")))
+        }
+    }
     @Test fun `ordinary late serialization failure keeps old or new per file without moving originals away`() = runBlocking {
         fixture { root, _, repo ->
             repo.saveChunks(listOf(chunk("first"), chunk("second")))
@@ -126,12 +143,20 @@ class RagOwnershipGuardTest {
         fixture { root, _, repo ->
             repo.saveChunks(listOf(chunk("old"))); val original = Files.readAllBytes(file(root, "old"))
             var held: java.nio.channels.FileChannel? = null
+            var stagedFile: Path? = null
+            var producerCompleted = false
             try {
-                assertFails { repo.replaceChunksForSessionStreaming("s") { emit ->
+                val failure = assertFails { repo.replaceChunksForSessionStreaming("s") { emit ->
                     emit(chunk("new"))
                     val staging = Files.list(file(root, "new").parent).use { paths -> paths.filter { it.fileName.toString().startsWith(".replace-") }.toList().single() }
-                    held = java.nio.channels.FileChannel.open(staging.resolve("new.json"), setOf(java.nio.file.StandardOpenOption.READ, com.sun.nio.file.ExtendedOpenOption.NOSHARE_DELETE))
+                    stagedFile = staging.resolve("new.json")
+                    held = java.nio.channels.FileChannel.open(requireNotNull(stagedFile), setOf(java.nio.file.StandardOpenOption.READ, com.sun.nio.file.ExtendedOpenOption.NOSHARE_DELETE))
+                    producerCompleted = true
                 } }
+                assertTrue(producerCompleted && held?.isOpen == true, "Fault setup must reach a held, completed stage")
+                val move = assertIs<java.nio.file.FileSystemException>(failure)
+                assertEquals(stagedFile!!.toAbsolutePath().normalize(), Path.of(move.file).toAbsolutePath().normalize())
+                assertEquals(file(root, "new").toAbsolutePath().normalize(), Path.of(move.otherFile).toAbsolutePath().normalize())
                 assertContentEquals(original, Files.readAllBytes(file(root, "old")))
                 assertFalse(Files.exists(file(root, "new")))
             } finally { held?.close() }

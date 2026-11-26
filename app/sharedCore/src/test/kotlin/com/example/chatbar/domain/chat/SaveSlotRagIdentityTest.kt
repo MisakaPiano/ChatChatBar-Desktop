@@ -18,6 +18,9 @@ class SaveSlotRagIdentityTest {
     @Test fun `UTF8 identity is fixed and blank identity is refused without new provenance`() {
         val original = VectorChunk("旧块", ChunkSourceType.CHAT_MEMORY, "source", content = "body", embedding = emptyList(), createdAt = 1)
         assertEquals("0684e372-77fb-30f0-8605-f12d61e74ebb", SaveSlotRagIdentity.restore(original, "目标").id)
+        val opaque = SaveSlotRagIdentity.restore(original.copy(id = "../logical-id"), "target")
+        assertTrue(opaque.id.matches(Regex("[0-9a-f-]{36}")))
+        assertEquals(original.content, opaque.content)
         assertFails { SaveSlotRagIdentity.restore(original, " ") }
         assertFails { SaveSlotRagIdentity.restore(original.copy(id = ""), "target") }
     }

@@ -774,13 +774,24 @@ class JsonFileStorage(
         acceptsExisting: (String, T, T) -> Boolean
     ) = mutexFor(entityType).withLock {
         val replacements = entities.toMap()
+        if (replacements.isEmpty()) return@withLock
         withContext(Dispatchers.IO) {
+            val directory = entityDir(entityType).canonicalFile
+            val targets = replacements.keys.associateWith { id ->
+                val leaf = try { Path.of("$id.json") }
+                catch (_: java.nio.file.InvalidPathException) { error("非法实体存储 ID") }
+                require(id.isNotBlank() && !leaf.isAbsolute && leaf.nameCount == 1 && leaf.fileName.toString() == "$id.json") { "非法实体存储 ID" }
+                File(directory, "$id.json").also { file ->
+                    require(file.canonicalFile.parentFile == directory) { "非法实体存储 ID" }
+                }
+            }
+            require(targets.values.map { it.canonicalFile.toPath() }.toSet().size == targets.size) { "RAG 批次包含重复物理目标，未覆盖原件" }
             replacements.forEach { (id, replacement) ->
-                val existing = readGuardedExisting(entityFile(entityType, id), entityType, serializer)
+                val existing = readGuardedExisting(targets.getValue(id), entityType, serializer)
                 check(existing == null || acceptsExisting(id, existing, replacement)) { "RAG 存储键属于其它来源，未覆盖原件" }
             }
             replacements.forEach { (id, replacement) ->
-                writeJsonFile(entityFile(entityType, id), replacement, serializer)
+                writeJsonFile(targets.getValue(id), replacement, serializer)
             }
         }
     }
