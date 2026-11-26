@@ -18,7 +18,16 @@ class DesktopInlineRagMergeRoundTripTest {
         DesktopDataRootProvenance.CLI_OVERRIDE, base.resolve("bootstrap.json"))) as DesktopDataRootOwnershipResult.Acquired).ownership
 
     @Test fun `real legacy file merge restore prune and cold read preserve per-message CSV dependencies`() = runBlocking {
-        for (choice in listOf(DesktopMergePreview.Choice.BOTH, DesktopMergePreview.Choice.TAKE_PHONE)) {
+        exercise(listOf(DesktopBackupRestoreMode.MERGE_CHOICES to DesktopMergePreview.Choice.BOTH,
+            DesktopBackupRestoreMode.MERGE_CHOICES to DesktopMergePreview.Choice.TAKE_PHONE))
+    }
+
+    @Test fun `independent ADD_COPIES restores per-message CSV and prunes only the related chunk after cold read`() = runBlocking {
+        exercise(listOf(DesktopBackupRestoreMode.ADD_COPIES to DesktopMergePreview.Choice.BOTH))
+    }
+
+    private suspend fun exercise(cases: List<Pair<DesktopBackupRestoreMode, DesktopMergePreview.Choice>>) {
+        for ((mode, choice) in cases) {
             val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/inline-rag-merge").toAbsolutePath()), "case-")
             try {
                 val pcRoot = Files.createDirectory(base.resolve("pc")); val store = JsonFileStorage(pcRoot)
@@ -55,7 +64,9 @@ class DesktopInlineRagMergeRoundTripTest {
                             val pcMedia = pc.proof.filterKeys { !it.startsWith("entities/") }
                             val phoneMedia = phone.source.inventory.filterKeys { !it.startsWith("entities/") }.mapValues { it.value.sha256 }
                             val preview = DesktopMergePreview.create(DesktopMergeRootPreparation.computerEntities(pc), phone.entities, pcMedia, phoneMedia, phone.source.manifest.scope)
-                            val selected = preview.select(preview.conflicts.associate { it.key to choice })
+                            assertTrue(preview.conflicts.isNotEmpty())
+                            val selected = if (mode == DesktopBackupRestoreMode.MERGE_CHOICES)
+                                preview.select(preview.conflicts.associate { it.key to choice }) else preview.modePlan(mode).selection
                             val root = Files.createDirectory(base.resolve("merged"))
                             val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("keys")), MergeRootSyntheticProtector)
                             own(root, base).use {
@@ -66,6 +77,10 @@ class DesktopInlineRagMergeRoundTripTest {
                                     authority.complete(pending, prepared.files); authority.verifyAndResolve()
                                     target = prepared.plan.identity.value("chat_sessions", "s")
                                     targetSecond = prepared.plan.identity.value("chat_messages", "m2")
+                                    if (mode == DesktopBackupRestoreMode.ADD_COPIES || choice == DesktopMergePreview.Choice.BOTH) {
+                                        assertNotEquals("s", target)
+                                        assertEquals("Computer stays original", ChatRepository(JsonFileStorage(root)).getMessagesReadOnly("s").single().content)
+                                    } else assertEquals("s", target)
                                 }
                                 val gate = DesktopDataOperationCoordinator(); val storage = JsonFileStorage(root, gate)
                                 val chats = ChatRepository(storage); val voices = VoiceMessageRepository(storage, true)
