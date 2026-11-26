@@ -180,7 +180,7 @@ class DesktopPrimaryChatDraftLifetimeTest {
     }
 
     @Test
-    fun `accepted Send clear survives caller disposal and old text never returns`() = runTest {
+    fun `durable USER clear survives caller disposal and old text never returns`() = runTest {
         withContainer { container ->
             MockWebServer().use { server ->
                 val id = prepare(container, server.url("/v1").toString())
@@ -189,22 +189,21 @@ class DesktopPrimaryChatDraftLifetimeTest {
                 val release = CompletableDeferred<Unit>()
                 val writes = mutableListOf<String>()
                 val controller = controller(container, StandardTestDispatcher(testScheduler)) { session, text ->
-                    entered.complete(Unit)
-                    release.await()
+                    if (text.isEmpty()) { entered.complete(Unit); release.await() }
                     container.chatRepository.updateSessionDraft(session, text)
                     writes += text
                 }
                 try {
                     controller.refresh()
-                    controller.editComposer("older in-flight")
-                    entered.await()
                     controller.editComposer("text to send")
                     val sending = async { controller.send() }
+                    entered.await()
                     val taskId = container.taskRuntime.tasks.first { it.isNotEmpty() }.first().taskId
+                    assertEquals(1, container.chatRepository.getMessages(id).count { it.role == MessageRole.USER })
                     sending.cancelAndJoin()
                     release.complete(Unit)
                     controller.drain()
-                    assertEquals(listOf("older in-flight", ""), writes)
+                    assertEquals(listOf("text to send", ""), writes)
                     assertEquals("", controller.state.value.composerDraft)
                     assertEquals("", container.chatRepository.getSessionDraft(id))
                     awaitTerminal(container, taskId)

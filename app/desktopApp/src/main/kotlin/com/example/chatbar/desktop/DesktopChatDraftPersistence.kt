@@ -24,8 +24,9 @@ internal class DesktopChatDraftPersistence(
     private val write: suspend (String, String) -> Unit,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val onResult: (DesktopDraftRevision, Boolean) -> Unit = { _, _ -> },
+    private val writeWithImages: (suspend (String, String, List<DesktopPendingImage>) -> Unit)? = null,
 ) {
-    private data class Pending(val revision: DesktopDraftRevision, val text: String)
+    private data class Pending(val revision: DesktopDraftRevision, val text: String, val images: List<DesktopPendingImage>)
     private data class Outcome(val sequence: Long, val successful: Boolean)
 
     private val lock = Any()
@@ -33,6 +34,7 @@ internal class DesktopChatDraftPersistence(
     private var sequence = 0L
     private val latest = mutableMapOf<String, DesktopDraftRevision>()
     private val pending = linkedMapOf<String, Pending>()
+    private val latestValues = mutableMapOf<String, Pending>()
     private val outcomes = MutableStateFlow<Map<String, Outcome>>(emptyMap())
     private val signal = Channel<Unit>(Channel.CONFLATED)
     private val supervisor = SupervisorJob()
@@ -44,7 +46,8 @@ internal class DesktopChatDraftPersistence(
                 } ?: break
                 // A failed write must not kill the worker or expose content/exception details.
                 val successful = try {
-                    write(next.revision.sessionId, next.text)
+                    if (writeWithImages == null) write(next.revision.sessionId, next.text)
+                    else writeWithImages.invoke(next.revision.sessionId, next.text, next.images)
                     true
                 } catch (_: Throwable) {
                     false
@@ -55,15 +58,24 @@ internal class DesktopChatDraftPersistence(
         }
     }
 
-    fun submit(sessionId: String, text: String): DesktopDraftRevision = synchronized(lock) {
-        submitLocked(sessionId, text)
+    fun submit(sessionId: String, text: String, images: List<DesktopPendingImage> = emptyList()): DesktopDraftRevision = synchronized(lock) {
+        submitLocked(sessionId, text, images)
+    }
+
+    fun latestText(sessionId: String): String? = synchronized(lock) { latestValues[sessionId]?.text }
+
+    fun retryLatest(sessionId: String, onAccepted: (DesktopDraftRevision) -> Unit = {}): DesktopDraftRevision? = synchronized(lock) {
+        val value = latestValues[sessionId] ?: return@synchronized null
+        val outcome = outcomes.value[sessionId]
+        if (outcome?.sequence == value.revision.sequence && !outcome.successful)
+            submitLocked(sessionId, value.text, value.images, onAccepted) else null
     }
 
     fun latestRevision(sessionId: String): DesktopDraftRevision? = synchronized(lock) { latest[sessionId] }
 
-    /** An admitted Send replaces queued old text, but never discards a newer user edit. */
-    fun clearIfCurrent(sessionId: String, expected: DesktopDraftRevision?): DesktopDraftRevision? = synchronized(lock) {
-        if (latest[sessionId] != expected) null else submitLocked(sessionId, "")
+    /** A durably persisted USER replaces its matched queued draft, but never discards a newer user edit. */
+    fun clearIfCurrent(sessionId: String, expected: DesktopDraftRevision?, onAccepted: (DesktopDraftRevision) -> Unit = {}): DesktopDraftRevision? = synchronized(lock) {
+        if (latest[sessionId] != expected) null else submitLocked(sessionId, "", emptyList(), onAccepted)
     }
 
     suspend fun await(revision: DesktopDraftRevision?) {
@@ -97,11 +109,14 @@ internal class DesktopChatDraftPersistence(
         if (outcomes.value.values.any { !it.successful }) throw DesktopDraftPersistenceException()
     }
 
-    private fun submitLocked(sessionId: String, text: String): DesktopDraftRevision {
+    private fun submitLocked(sessionId: String, text: String, images: List<DesktopPendingImage>,
+        onAccepted: (DesktopDraftRevision) -> Unit = {}): DesktopDraftRevision {
         check(accepting) { "Chat draft persistence is closing" }
         val revision = DesktopDraftRevision(sessionId, ++sequence)
         latest[sessionId] = revision
-        pending[sessionId] = Pending(revision, text)
+        pending[sessionId] = Pending(revision, text, images.toList())
+        latestValues[sessionId] = requireNotNull(pending[sessionId])
+        onAccepted(revision) // Install UI ownership before a direct dispatcher can complete the write.
         check(signal.trySend(Unit).isSuccess)
         return revision
     }

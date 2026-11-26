@@ -15,7 +15,7 @@ internal class DesktopMergeRetainedMedia(
         records.keys.forEach { path ->
             checkActive()
             val type = DesktopBackupPolicy.entityType(path)
-            if (type in setOf("chat_messages", "moment_posts", "novelai_generation_history", "desktop_image_post_process_results")) {
+            if (type in setOf("chat_messages", "chat_drafts", "moment_posts", "novelai_generation_history", "desktop_image_post_process_results")) {
                 val value = records.getValue(path)
                 key(type, value)?.let { check(put(it, path) == null) { "MERGE_RETAINED_ID_COLLISION" } }
             }
@@ -89,13 +89,14 @@ internal class DesktopMergeRetainedMedia(
         val targetKey = key(record.type, mappedIdentity) ?: return null
         val old = paths[targetKey]?.let(records::getValue) ?: return null
         val fields: Map<String, JsonElement> = when (record.type) {
-            "chat_messages" -> {
+            "chat_messages", "chat_drafts" -> {
                 val session = incoming["sessionId"]?.jsonPrimitive?.contentOrNull ?: return null
                 val images = (selected.sessionChoices[session] ?: selected.sessionDefaultChoice)?.images
                     ?: (selected.sessionsWithImages == selected.sessions || selected.sessionsWithImages > 0 &&
                         (incoming["images"] as? JsonArray)?.isNotEmpty() == true)
                 if (images) return null
-                mapOf("images" to (old["images"] ?: JsonArray(emptyList())),
+                if (record.type == "chat_drafts") mapOf("images" to (old["images"] ?: JsonArray(emptyList())))
+                else mapOf("images" to (old["images"] ?: JsonArray(emptyList())),
                     "generatedImageMetadata" to (old["generatedImageMetadata"] ?: JsonArray(emptyList())))
             }
             "moment_posts" -> {
@@ -126,6 +127,7 @@ internal class DesktopMergeRetainedMedia(
     }
 
     private fun key(type: String, value: JsonObject): List<String?>? {
+        if (type == "chat_drafts") return value["sessionId"]?.jsonPrimitive?.contentOrNull?.let { listOf(type, it) }
         val id = value["id"]?.jsonPrimitive?.contentOrNull ?: return null
         return when (type) {
             "chat_messages" -> listOf(type, id, value["sessionId"]?.jsonPrimitive?.contentOrNull)

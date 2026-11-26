@@ -394,8 +394,9 @@ internal class DesktopTaskRuntime(
         try { return work() } finally { synchronized(lock) { messageMutations.remove(sessionId) } }
     }
 
-    fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList()): String =
-        launchGeneration(sessionId, content, null, attachments)
+    fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList(),
+        onUserPersisted: (String) -> Unit = {}): String =
+        launchGeneration(sessionId, content, null, attachments, onUserPersisted)
 
     fun launchRegeneration(sessionId: String, messageId: String): String =
         launchGeneration(sessionId, "", messageId)
@@ -526,7 +527,8 @@ internal class DesktopTaskRuntime(
         id
     }
 
-    private fun launchGeneration(sessionId: String, content: String, messageId: String?, attachments: List<DesktopPendingImage> = emptyList()): String {
+    private fun launchGeneration(sessionId: String, content: String, messageId: String?, attachments: List<DesktopPendingImage> = emptyList(),
+        onUserPersisted: (String) -> Unit = {}): String {
         val taskId = UUID.randomUUID().toString()
         val control = DesktopChatGenerationControl()
         val createdAt = clock()
@@ -554,6 +556,7 @@ internal class DesktopTaskRuntime(
                         }
                         override fun onUserMessagePersisted(messageId: String) {
                             update(taskId) { it.copy(persistedUserMessageId = messageId) }
+                            onUserPersisted(messageId)
                         }
 
                         override fun onUpdate(update: DesktopRealChatStreamUpdate) {

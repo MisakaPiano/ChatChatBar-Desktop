@@ -21,4 +21,16 @@ class ChatDraftSerializationTest {
         assertEquals("half typed message", decoded.content)
         assertEquals(200, decoded.updatedAt)
     }
+
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    @Test fun `empty images keep legacy JSON and nonempty images survive copy and round trip`() {
+        val json = Json { encodeDefaults = true }
+        val plain = ChatDraft("s", "body", 7)
+        val old = """{"sessionId":"s","content":"body","updatedAt":7}"""
+        assertEquals(old, json.encodeToString(ChatDraft.serializer(), plain))
+        assertEquals(emptyList(), json.decodeFromString(ChatDraft.serializer(), old).images)
+        val image = ChatDraft("s", "", 7, listOf("images/a.png", "images/b.png"))
+        assertEquals(image, json.decodeFromString(ChatDraft.serializer(), json.encodeToString(ChatDraft.serializer(), image)))
+        assertEquals(image.images, image.copy(content = "new text").images)
+    }
 }

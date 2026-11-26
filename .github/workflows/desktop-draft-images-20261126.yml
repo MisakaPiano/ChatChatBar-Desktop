@@ -1,0 +1,93 @@
+name: Desktop durable image drafts
+on:
+  push:
+    branches: [codex/desktop-owner-scope-20261126]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-draft-images-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical synthetic directory and exact source
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-draft-images'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class DraftFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([DraftFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'draft-review' | Out-Null
+          git rev-parse HEAD | Set-Content 'draft-review/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'draft-review/tree.txt'
+      - name: Reproduce attachment loss before USER with fixed old controller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '485b721b0d85448cbe8eec986691ccef8012e3ca'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_SOURCE_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest.Stop during image understanding keeps image draft through actual container restart' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_DRAFT_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.type -notlike '*Assertion*') { throw 'PRIOR_DRAFT_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'draft-review/negative-draft-stop.xml'
+            $prior | Set-Content 'draft-review/negative-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'CURRENT_SOURCE_NOT_RESTORED' }
+          }
+      - name: Verify portable draft DTO and repository
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.ChatDraftSerializationTest'
+          --tests 'com.example.chatbar.data.repository.ChatDraftImagesTest'
+          --tests 'com.example.chatbar.data.repository.ChatMessageOwnerScopeTest'
+          --no-daemon --stacktrace
+      - name: Verify actual draft lifetimes media backup and existing send UI
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopDraftImagesLifetimeTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopDraftImageBackupTest'
+          --tests 'com.example.chatbar.desktop.DesktopChatDraftPersistenceTest'
+          --tests 'com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest'
+          --tests 'com.example.chatbar.desktop.DesktopPrimaryChatControllerTest'
+          --tests 'com.example.chatbar.desktop.DesktopPhase7ImagesTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopBackupSelectionTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeOmittedImageRetentionTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-draft-images-original-results
+          path: |
+            draft-review/
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/

@@ -71,6 +71,7 @@ class ChatRepository internal constructor(
     private val messageIndexMutex = Mutex()
     private val messageIndexes = ConcurrentHashMap<String, ChatMessageIndex>()
     private val scrollPositionMutex = Mutex()
+    private val draftMutex = Mutex()
 
     suspend fun initialize() {
         if (initialized) return
@@ -170,20 +171,36 @@ class ChatRepository internal constructor(
         refreshSessionCache()
     }
 
-    suspend fun getSessionDraft(id: String): String {
-        return storage.loadEntity(DRAFT_TYPE, id, ChatDraft.serializer())?.content.orEmpty()
+    suspend fun getSessionDraft(id: String): String = getSessionDraftSnapshot(id)?.content.orEmpty()
+
+    suspend fun getSessionDraftSnapshot(id: String): ChatDraft? = draftMutex.withDataAccess {
+        readDraftLocked(id)
     }
 
-    suspend fun updateSessionDraft(id: String, draft: String) {
-        if (draft.isEmpty()) {
-            deleteSessionDraft(id)
-        } else {
-            storage.saveEntity(DRAFT_TYPE, id, ChatDraft(id, draft), ChatDraft.serializer())
-        }
+    private suspend fun readDraftLocked(id: String): ChatDraft? = when (val read = storage.readEntityStrict(DRAFT_TYPE, id, ChatDraft.serializer())) {
+        JsonFileStorage.EntityReadResult.Missing -> null
+        is JsonFileStorage.EntityReadResult.Valid -> read.value.also { check(it.sessionId == id) { "草稿会话归属不一致" } }
+        else -> error("无法读取聊天草稿；原件保留，请重试")
     }
 
-    suspend fun deleteSessionDraft(id: String) {
-        storage.deleteEntity<ChatDraft>(DRAFT_TYPE, id)
+    /** Old text-only consumers preserve attachments; full snapshots own explicit image removal. */
+    suspend fun updateSessionDraft(id: String, draft: String) = draftMutex.withDataAccess {
+        writeDraftLocked(id, draft, readDraftLocked(id)?.images.orEmpty())
+    }
+
+    suspend fun updateSessionDraftSnapshot(id: String, content: String, images: List<String>) = draftMutex.withDataAccess {
+        readDraftLocked(id) // Corrupt or foreign evidence never grants overwrite.
+        writeDraftLocked(id, content, images)
+    }
+
+    private suspend fun writeDraftLocked(id: String, content: String, images: List<String>) {
+        require(images.all(String::isNotBlank))
+        if (content.isEmpty() && images.isEmpty()) storage.deleteEntity<ChatDraft>(DRAFT_TYPE, id, requireSuccess = true)
+        else storage.saveEntity(DRAFT_TYPE, id, ChatDraft(id, content, System.currentTimeMillis(), images.toList()), ChatDraft.serializer())
+    }
+
+    suspend fun deleteSessionDraft(id: String) = draftMutex.withDataAccess {
+        storage.deleteEntity<ChatDraft>(DRAFT_TYPE, id, requireSuccess = true)
     }
 
     suspend fun getScrollPosition(sessionId: String): ChatScrollPosition? {

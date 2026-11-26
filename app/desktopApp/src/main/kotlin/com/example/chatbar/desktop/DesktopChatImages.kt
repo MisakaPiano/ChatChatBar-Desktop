@@ -59,6 +59,29 @@ internal class DesktopChatImages(
             System.currentTimeMillis(), "p7" + UUID.randomUUID())
     }
 
+    // Root-local runtime identity only. Portable drafts contain resource references, never this cache.
+    private val draftReferences = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    suspend fun persistDraft(sessionId: String, text: String, attachments: List<DesktopPendingImage>) =
+        gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
+            val references = attachments.map { pending ->
+                draftReferences[pending.id]?.also { reference ->
+                    check(resources.readBytes(reference).contentEquals(pending.bytes)) { "草稿附件已变化；保留原草稿" }
+                } ?: import(pending.bytes).also { draftReferences[pending.id] = it }
+            }
+            // Keep uncertain/failed writes and their files for exact retry; normal reference-aware
+            // cleanup may reclaim an unreferenced file later, never this in-flight publication.
+            chats.updateSessionDraftSnapshot(sessionId, text, references)
+        } }
+
+    suspend fun restoreDraftImages(references: List<String>): List<DesktopPendingImage> = gate.withNormalOperation {
+        withContext(Dispatchers.IO) { references.map { reference ->
+            val bytes = resources.readBytes(reference)
+            DesktopImageEditing.decode(bytes)
+            DesktopPendingImage(bytes = bytes.copyOf()).also { draftReferences[it.id] = reference }
+        } }
+    }
+
     suspend fun persistUser(sessionId: String, text: String, attachments: List<DesktopPendingImage>): ChatMessage =
         gate.withNormalOperation {
             withContext(NonCancellable + Dispatchers.IO) {

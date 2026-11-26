@@ -125,3 +125,5 @@ All abbreviated source paths are relative to app/app/src/main/java/com/example/c
 - Keep each row short, ownership-focused, and actionable.
 
 Desktop reply rhythm: `DesktopComposerNarrativeControl` appears in both primary and full composers, opens `DesktopChatNarrativeModeDialog`, and persists through `DesktopPrimaryChatController.setNarrativeMode`/the repository mutex. `DesktopManagePanel` Reply settings owns global disable through `DesktopSettingsDraft` load/dirty/discard/save/reconcile in `DesktopModelSettingsController`; `DesktopChatRequestPlanner`/`ChatHistoryPromptPolicy` own request-only current/prior/history mode projection.
+
+- Desktop text/image composer persistence, pre-USER Stop, revision-safe consumption and draft media backup: use `chatbar-desktop-chat-drafts`; primary files are `DesktopPrimaryChatController`, `DesktopChatDraftPersistence`, `DesktopChatImages` and shared `ChatRepository/ChatDraft`.

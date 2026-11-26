@@ -247,7 +247,7 @@ class BackupExportCatalog internal constructor(
                         field == "lastSeenMomentsAt" && selection.moments
                     if (preserve) null else defaultSettings[field]?.toString()
                 }
-                record.type == "chat_messages" && selection.sessions[record.string("sessionId")]?.images == false &&
+                record.type in setOf("chat_messages", "chat_drafts") && selection.sessions[record.string("sessionId")]?.images == false &&
                     fields.size == 1 && fields.single() in setOf("images", "generatedImageMetadata") -> "[]"
                 record.type == "moment_posts" && !selection.momentsImages &&
                     fields.size == 1 && fields.single() in setOf("imagePath", "generatedImageMetadata") -> "null"
@@ -299,7 +299,7 @@ class BackupExportCatalog internal constructor(
                         return counter.bytes
                     }
                     val type = relative.removePrefix("entities/").substringBefore('/').removeSuffix(".json")
-                    val withoutChatImages = if (type == "chat_messages") sizeWithout { path ->
+                    val withoutChatImages = if (type in setOf("chat_messages", "chat_drafts")) sizeWithout { path ->
                         "[]".takeIf { path.size == 1 && path.single() in setOf("images", "generatedImageMetadata") }
                     } else file.length()
                     val withoutStudioImages = if (type in setOf("novelai_generation_history", "desktop_image_post_process_results")) sizeWithout { path ->
@@ -369,7 +369,7 @@ internal class BackupExportPlan(
         var unknown = 0
         for (record in records) {
             paths[record.file.canonicalPath] = when {
-                record.type == "chat_messages" && selection.sessions[record.string("sessionId")]?.images == false -> record.withoutChatImagesBytes
+                record.type in setOf("chat_messages", "chat_drafts") && selection.sessions[record.string("sessionId")]?.images == false -> record.withoutChatImagesBytes
                 record.type in setOf("novelai_generation_history", "desktop_image_post_process_results") && !selection.studioHistoryImages -> record.withoutStudioImagesBytes
                 record.type == "moment_posts" && !selection.momentsImages -> record.withoutMomentImagesBytes
                 else -> record.file.length()

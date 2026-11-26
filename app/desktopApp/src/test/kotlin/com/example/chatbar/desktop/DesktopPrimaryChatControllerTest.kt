@@ -646,6 +646,8 @@ class DesktopPrimaryChatControllerTest {
                 controller.editComposer("first user")
                 controller.persistComposer()
                 val taskId = assertNotNull(controller.send())
+                awaitTask(container, taskId) { it.status != DesktopTaskStatus.RUNNING }
+                controller.persistComposer()
                 assertEquals("", controller.state.value.composerDraft)
                 assertEquals("", container.chatRepository.getSessionDraft(id))
                 awaitTask(container, taskId) { it.status != DesktopTaskStatus.RUNNING }

@@ -153,7 +153,7 @@ internal class DesktopPrimaryChatController(
     private val catalogProvider: (String?) -> String? = { null },
     val taskRuntime: DesktopTaskRuntime,
     draftDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    draftWriter: suspend (String, String) -> Unit = chats::updateSessionDraft,
+    draftWriter: (suspend (String, String) -> Unit)? = null,
     private val sessionSearch: suspend (String) -> List<ChatSession> = chats::searchSessions,
     readingDispatcher: CoroutineDispatcher = Dispatchers.IO,
     readingWriter: suspend (ChatScrollPosition) -> Unit = chats::updateScrollPosition,
@@ -229,7 +229,7 @@ internal class DesktopPrimaryChatController(
         return result
     }
 
-    private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
+    private val pendingBySession = java.util.concurrent.ConcurrentHashMap<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
     private val draftLock = Mutex()
     private val mutableState = MutableStateFlow(DesktopPrimaryChatState())
@@ -281,8 +281,16 @@ internal class DesktopPrimaryChatController(
     private var sessionSettingsLeavesInProgress = 0
     private val searchGeneration = AtomicLong()
     private val composerLock = Any()
-    private var pendingComposerClear: DesktopDraftRevision? = null
-    private val draftPersistence = DesktopChatDraftPersistence(draftWriter, draftDispatcher, ::onDraftResult)
+    private val pendingComposerClears = mutableMapOf<String, DesktopDraftRevision>()
+    private val draftPersistence = DesktopChatDraftPersistence(draftWriter ?: chats::updateSessionDraft,
+        draftDispatcher, ::onDraftResult, writeWithImages = { sessionId, text, images ->
+            draftWriter?.invoke(sessionId, text) // Existing injected write admission/failure seam.
+            if (imageStore != null) imageStore.persistDraft(sessionId, text, images)
+            else {
+                check(images.isEmpty()) { "草稿附件存储不可用" }
+                chats.updateSessionDraftSnapshot(sessionId, text, emptyList())
+            }
+        })
     private val readingLock = Any()
     private val readingPositions: DesktopChatReadingPositionWriter = DesktopChatReadingPositionWriter(chats::getScrollPosition, readingWriter,
         dispatcher = readingDispatcher, onResult = ::onReadingResult)
@@ -849,9 +857,9 @@ internal class DesktopPrimaryChatController(
         synchronized(composerLock) {
             val id = state.value.selectedSession?.id ?: return
             if (id in deletingSessions) return
-            pendingComposerClear = null
+            pendingComposerClears.remove(id)
             try {
-                draftPersistence.submit(id, text)
+                draftPersistence.submit(id, text, state.value.pendingImages)
                 mutableState.update { it.copy(composerDraft = text, error = null) }
             } catch (_: IllegalStateException) {
                 mutableState.update { it.copy(composerDraft = text, error = "Chat draft persistence is closing") }
@@ -864,8 +872,8 @@ internal class DesktopPrimaryChatController(
         if (sessionId == null || state.value.selectedSession?.id != sessionId || state.value.composerDraft != before)
             return@synchronized false
         try {
-            draftPersistence.submit(sessionId, after)
-            pendingComposerClear = null
+            draftPersistence.submit(sessionId, after, state.value.pendingImages)
+            pendingComposerClears.remove(sessionId)
             mutableState.update { it.copy(composerDraft = after, error = null) }
             true
         } catch (_: IllegalStateException) {
@@ -905,7 +913,15 @@ internal class DesktopPrimaryChatController(
 
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
     suspend fun persistComposer() = guarded {
-        state.value.selectedSession?.id?.let { draftPersistence.flush(it) }
+        state.value.selectedSession?.id?.let { id ->
+            synchronized(composerLock) {
+                val before = draftPersistence.latestRevision(id)
+                draftPersistence.retryLatest(id) { retry ->
+                    if (pendingComposerClears[id] == before && before != null) pendingComposerClears[id] = retry
+                }
+            }
+            draftPersistence.flush(id)
+        }
     }
 
     /** Archive preparation must observe a failed persistence instead of exporting older text. */
@@ -939,11 +955,17 @@ internal class DesktopPrimaryChatController(
         val prepared = kotlinx.coroutines.withContext(Dispatchers.IO) {
             input.paths.map { store.prepare(it) } + listOfNotNull(input.raster?.let { store.prepareBytes(it) })
         }
-        stateLock.withLock {
-            val pending = pendingBySession[sessionId].orEmpty()
-            pendingBySession[sessionId] = pending + prepared
-            mutableState.update { if (it.selectedSession?.id == sessionId) it.copy(pendingImages = pending + prepared, error = null) else it }
-        }
+        val persistedText = chats.getSessionDraftSnapshot(sessionId)?.content.orEmpty()
+        stateLock.withLock { synchronized(composerLock) {
+            val pending = pendingBySession[sessionId].orEmpty() + prepared
+            val text = if (state.value.selectedSession?.id == sessionId) state.value.composerDraft
+                else draftPersistence.latestText(sessionId) ?: persistedText
+            pendingComposerClears.remove(sessionId)
+            draftPersistence.submit(sessionId, text, pending)
+            pendingBySession[sessionId] = pending
+            mutableState.update { if (it.selectedSession?.id == sessionId) it.copy(pendingImages = pending, error = null) else it }
+        } }
+        draftPersistence.flush(sessionId)
     }
 
     suspend fun reorderPendingImage(id: String, to: Int) = stateLock.withLock {
@@ -952,8 +974,12 @@ internal class DesktopPrimaryChatController(
         val from = pending.indexOfFirst { it.id == id }
         if (from < 0 || to !in pending.indices) return@withLock
         pending.add(to, pending.removeAt(from))
-        pendingBySession[session.id] = pending
-        mutableState.update { it.copy(pendingImages = pending, error = null) }
+        synchronized(composerLock) {
+            pendingComposerClears.remove(session.id)
+            draftPersistence.submit(session.id, state.value.composerDraft, pending)
+            pendingBySession[session.id] = pending
+            mutableState.update { it.copy(pendingImages = pending, error = null) }
+        }
     }
 
     fun imageIngressFailure() { mutableState.update { it.copy(error = "图片附件无法读取；原有附件保留") } }
@@ -961,8 +987,12 @@ internal class DesktopPrimaryChatController(
     suspend fun removePendingImage(id: String) = stateLock.withLock {
         val session = state.value.selectedSession ?: return@withLock
         val pending = pendingBySession[session.id].orEmpty().filterNot { it.id == id }
-        pendingBySession[session.id] = pending
-        mutableState.update { it.copy(pendingImages = pending, error = null) }
+        synchronized(composerLock) {
+            pendingComposerClears.remove(session.id)
+            draftPersistence.submit(session.id, state.value.composerDraft, pending)
+            pendingBySession[session.id] = pending
+            mutableState.update { it.copy(pendingImages = pending, error = null) }
+        }
     }
 
     suspend fun selectSessionBackground(reference: String) = guarded {
@@ -1379,24 +1409,22 @@ internal class DesktopPrimaryChatController(
                 val attachments = if (continuation) emptyList() else current.pendingImages
                 if (!continuation && text.isBlank() && attachments.isEmpty()) return@withLock
                 try {
-                    accepted = taskRuntime.launchChat(session.id, text, attachments)
-                    if (!continuation) {
-                        pendingBySession.remove(session.id)
-                        mutableState.update { it.copy(pendingImages = emptyList()) }
-                    }
+                    // A refused/failed persistence cannot admit a send of an older composer snapshot.
+                    draftPersistence.await(revision)
+                    accepted = taskRuntime.launchChat(session.id, text, attachments, onUserPersisted = {
+                        if (!continuation) synchronized(composerLock) {
+                            try {
+                                draftPersistence.clearIfCurrent(session.id, revision) { pendingComposerClears[session.id] = it }
+                            } catch (_: IllegalStateException) {
+                                mutableState.update { it.copy(error = "草稿尚未清理；请重试保存草稿") }
+                            }
+                        }
+                    })
                 } catch (rejected: DesktopTaskAdmissionException) {
                     mutableState.update { it.copy(error = rejected.message) }
                     return@withLock
                 }
-                if (!continuation) {
-                    val clear = synchronized(composerLock) {
-                        draftPersistence.clearIfCurrent(session.id, revision)?.also {
-                            pendingComposerClear = it
-                        }
-                    }
-                    // Cancelling this waiter cannot cancel the write or its UI-state completion callback.
-                    draftPersistence.await(clear)
-                }
+
             }
         }
         return accepted
@@ -1406,12 +1434,13 @@ internal class DesktopPrimaryChatController(
         synchronized(composerLock) {
             if (!successful) {
                 mutableState.update { it.copy(error = "Unable to save chat draft") }
-            } else if (pendingComposerClear == revision &&
+            } else if (pendingComposerClears[revision.sessionId] == revision &&
                 draftPersistence.latestRevision(revision.sessionId) == revision
             ) {
-                pendingComposerClear = null
+                pendingComposerClears.remove(revision.sessionId)
+                pendingBySession.remove(revision.sessionId)
                 mutableState.update {
-                    if (it.selectedSession?.id == revision.sessionId) it.copy(composerDraft = "", error = null) else it
+                    if (it.selectedSession?.id == revision.sessionId) it.copy(composerDraft = "", pendingImages = emptyList(), error = null) else it
                 }
             }
         }
@@ -1482,8 +1511,11 @@ internal class DesktopPrimaryChatController(
             val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val persistedDraft = if (state.value.selectedSession?.id == id) null else {
                 draftPersistence.flush(id)
-                chats.getSessionDraft(id)
+                chats.getSessionDraftSnapshot(id)
             }
+            val restoredDraftImages = if (persistedDraft?.images.isNullOrEmpty()) emptyList()
+                else requireNotNull(imageStore) { "无法恢复草稿附件；原草稿保留" }.restoreDraftImages(persistedDraft!!.images)
+            if (persistedDraft != null) pendingBySession.putIfAbsent(id, restoredDraftImages)
             val deferredSelection: suspend () -> Unit = { selectSession(id) }
             // Edits may arrive while selection reads suspend. Commit a switch only after the outgoing
             // revision is durable, checking it again under the same lock used to capture edits.
@@ -1531,7 +1563,7 @@ internal class DesktopPrimaryChatController(
                             totalMessageCount = page.totalMessageCount,
                             pendingImages = pendingBySession[id].orEmpty(),
                             backgroundOpacity = appSettings.chatBackgroundImageOpacity,
-                            composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
+                            composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft?.content.orEmpty(),
                             modelUsable = modelStatus.isUsable,
                             modelDiagnostic = diagnostic,
                             configurationMessage = modelStatus.errors.firstOrNull(),
