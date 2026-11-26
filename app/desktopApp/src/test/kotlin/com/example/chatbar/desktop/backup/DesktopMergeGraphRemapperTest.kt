@@ -8,6 +8,22 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeGraphRemapperTest {
+    @Test fun `legacy CSV whitespace maps reader identities in top level and inline RAG`() {
+        val chunk = VectorChunk("chunk", ChunkSourceType.CHAT_MEMORY, "s", content = "Original summary",
+            embedding = listOf(1f), metadata = mapOf("messageIds" to " m1, , m2, ", "note" to " m1, , m2, "), createdAt = 1)
+        val slot = SaveSlot(schemaVersion = 7, id = "slot", sessionId = "s", name = "Legacy", createdAt = 1, vectorChunks = listOf(chunk))
+        val ids = DesktopMergeIdentity().apply { bind("chat_messages", "m1", "fork-one"); bind("chat_messages", "m2", "fork-two") }
+        val standalone = record("vector_chunks", backupJson.encodeToJsonElement(VectorChunk.serializer(), chunk).jsonObject)
+        val inline = record("save_slots", backupJson.encodeToJsonElement(SaveSlot.serializer(), slot).jsonObject)
+        val mappedChunk = backupJson.decodeFromJsonElement(VectorChunk.serializer(), DesktopMergeGraphRemapper(listOf(standalone), ids).rewrite(standalone))
+        val mappedSlot = backupJson.decodeFromJsonElement(SaveSlot.serializer(), DesktopMergeGraphRemapper(listOf(inline), ids).rewrite(inline))
+        for (mapped in listOf(mappedChunk, mappedSlot.vectorChunks.single())) {
+            assertEquals("fork-one,fork-two", mapped.metadata["messageIds"])
+            assertEquals(chunk.metadata["note"], mapped.metadata["note"])
+            assertEquals(chunk.content, mapped.content)
+        }
+    }
+
     @Test fun `inline RAG CSV references map each original message without rewriting note text`() {
         val first = ChatMessage("m1", "s", MessageRole.USER, "Original user", createdAt = 1, updatedAt = 1)
         val second = ChatMessage("m2", "s", MessageRole.ASSISTANT, "Original reply", createdAt = 2, updatedAt = 2)

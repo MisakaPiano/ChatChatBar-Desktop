@@ -26,7 +26,11 @@ class DesktopInlineRagMergeRoundTripTest {
         exercise(listOf(DesktopBackupRestoreMode.ADD_COPIES to DesktopMergePreview.Choice.BOTH))
     }
 
-    private suspend fun exercise(cases: List<Pair<DesktopBackupRestoreMode, DesktopMergePreview.Choice>>) {
+    @Test fun `legacy spaced CSV survives independent copies merge restore duplicate and cold cleanup`() = runBlocking {
+        exercise(listOf(DesktopBackupRestoreMode.ADD_COPIES to DesktopMergePreview.Choice.BOTH), spacedCsv = true)
+    }
+
+    private suspend fun exercise(cases: List<Pair<DesktopBackupRestoreMode, DesktopMergePreview.Choice>>, spacedCsv: Boolean = false) {
         for ((mode, choice) in cases) {
             val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/inline-rag-merge").toAbsolutePath()), "case-")
             try {
@@ -40,14 +44,17 @@ class DesktopInlineRagMergeRoundTripTest {
                 val first = ChatMessage("m1", "s", MessageRole.USER, "Original user body", createdAt = 2, updatedAt = 2)
                 val second = ChatMessage("m2", "s", MessageRole.ASSISTANT, "Original reply body", createdAt = 3, updatedAt = 3)
                 val pair = VectorChunk("pair", ChunkSourceType.CHAT_MEMORY, "s", messageId = "m1", content = "Original paired summary",
-                    embedding = listOf(1f, 0f), metadata = mapOf("messageIds" to "m1,m2", "indexMode" to "message_pair", "note" to "m1,m2"), createdAt = 1)
+                    embedding = listOf(1f, 0f), metadata = mapOf("messageIds" to if (spacedCsv) "m1, m2" else "m1,m2", "indexMode" to "message_pair", "note" to "m1,m2"), createdAt = 1)
                 val manual = VectorChunk("manual", ChunkSourceType.CHAT_MEMORY, "s", content = "Independent manual summary",
                     embedding = listOf(0f, 1f), metadata = mapOf("origin" to "manual", "note" to "m1,m2"), createdAt = 1)
                 val legacy = SaveSlot(schemaVersion = 7, id = "slot", sessionId = "s", name = "Original inline archive", createdAt = 1,
                     messages = listOf(first, second), vectorChunks = listOf(pair, manual))
                 val legacyBytes = raw(SaveSlot.serializer(), legacy)
                 val legacyFile = Files.write(base.resolve("original-inline.cbsave"), legacyBytes)
-                assertEquals(2, DesktopSaveSlotInspector(true).inspect(legacyFile).counts?.messages)
+                val inspection = DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(legacyFile)
+                assertEquals(SlotInspectStatus.STRUCTURE_VALID, inspection.status)
+                assertEquals(SlotInspectCode.OK, inspection.code)
+                assertEquals(2, inspection.counts?.messages)
                 val incoming = mapOf(
                     "entities/character_cards/card.json" to raw(CharacterCard.serializer(), CharacterCard("card", "Synthetic", createdAt = 1, updatedAt = 1)),
                     "entities/chat_sessions/s.json" to raw(ChatSession.serializer(), session.copy(title = "Phone")),
@@ -97,6 +104,24 @@ class DesktopInlineRagMergeRoundTripTest {
                                     val restoredPair = rag.getAllChunksForSession(target).single { it.content == pair.content }
                                     assertEquals(setOf(chats.getMessagesReadOnly(target).first().id, targetSecond), restoredPair.metadata.getValue("messageIds").split(',').toSet())
                                     assertEquals("m1,m2", restoredPair.metadata["note"])
+                                    if (spacedCsv) {
+                                        val spaced = restoredPair.copy(metadata = restoredPair.metadata +
+                                            ("messageIds" to restoredPair.metadata.getValue("messageIds").split(',').joinToString(", ")))
+                                        rag.saveChunks(listOf(spaced))
+                                        val originalChunkPath = root.resolve("entities/vector_chunks/${spaced.id}.json")
+                                        val originalChunkBytes = Files.readAllBytes(originalChunkPath)
+                                        val duplicate = service.duplicate(target)
+                                        val duplicatePair = RagRepository(JsonFileStorage(root)).getAllChunksForSession(duplicate.id).single { it.content == pair.content }
+                                        assertEquals(chats.getMessagesReadOnly(duplicate.id).map { it.id }.toSet(), duplicatePair.metadata.getValue("messageIds").split(',').toSet())
+                                        assertEquals(pair.embedding, duplicatePair.embedding)
+                                        assertEquals("m1,m2", duplicatePair.metadata["note"])
+                                        assertContentEquals(originalChunkBytes, Files.readAllBytes(originalChunkPath))
+                                        val duplicateSecond = chats.getMessagesReadOnly(duplicate.id).single { it.content == second.content }.id
+                                        RagRepository(JsonFileStorage(root)).deleteChunksByMessageId(duplicateSecond)
+                                        val coldDuplicate = RagRepository(JsonFileStorage(root)).getAllChunksForSession(duplicate.id)
+                                        assertEquals(listOf(manual.content), coldDuplicate.map { it.content })
+                                        assertContentEquals(originalChunkBytes, Files.readAllBytes(originalChunkPath))
+                                    }
                                     rag.deleteChunksByMessageId(targetSecond)
                                     val cold = RagRepository(JsonFileStorage(root)).getAllChunksForSession(target)
                                     assertEquals(listOf(manual.content), cold.map { it.content })

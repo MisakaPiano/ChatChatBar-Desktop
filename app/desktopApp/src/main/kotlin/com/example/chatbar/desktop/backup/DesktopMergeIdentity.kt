@@ -131,7 +131,10 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
         val metadata = fields.takeLast(2)
         val csvMessageReferences = metadata in setOf(listOf("metadata", "messageIds"), listOf("metadata", "actionChoiceSourceIds")) &&
             (fields.size == 2 || record.type == "save_slots" && fields.dropLast(2).lastOrNull() == "vectorChunks")
-        if (csvMessageReferences) return text.split(',').joinToString(",") { value(type, it) }
+        if (csvMessageReferences) {
+            val references = text.split(',').let { parts -> if (metadata.last() == "messageIds") parts.map(String::trim).filter(String::isNotEmpty) else parts }
+            return references.joinToString(",") { value(type, it) }
+        }
         return value(type, text)
     }
     fun key(text: String, fields: List<String>): String = when (fields.lastOrNull()) {

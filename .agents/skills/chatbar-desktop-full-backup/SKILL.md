@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+Legacy RAG `metadata.messageIds` CSV uses the existing reader's trimmed, nonempty token identities when remapped or copied; normalize before namespace lookup so `m1, m2` does not invent a different second message. Arbitrary note/body and action-choice token rules are unchanged. `DesktopInlineRagMergeRoundTripTest` includes independent ADD_COPIES → actual restore → duplicate with spaced source references → cold cleanup, alongside canonical CSV cases.
+
 ChatMessage repair checkpoints include the legacy single slot and optional `otherFormatRepairNotices`. Modern export/staging retains both without rebinding stable alternative IDs; `DesktopFullBackupServiceTest` checks independent A redo/B restore after authenticated inspection. This does not claim older official versions preserve the added optional field.
 
 Generated-voice nonnull `desktopVersionOwnershipUncertain` is Desktop-only custody metadata and participates in the existing Desktop-extension disclosure. Current Entity/SaveSlot serialization retains it; absent/null is omitted even with encodeDefaults, preserving existing voice custody hashes. An older Android rewrite may drop the field; a later Desktop read treats absence as unknown and preserves the recording, never as confirmed deletion authority.

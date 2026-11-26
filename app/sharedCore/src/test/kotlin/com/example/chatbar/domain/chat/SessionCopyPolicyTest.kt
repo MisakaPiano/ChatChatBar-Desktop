@@ -13,6 +13,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SessionCopyPolicyTest {
+    @Test fun `legacy CSV whitespace follows reader message identity when copying`() {
+        val policy = SessionCopyPolicy("target", setOf("a", "b"))
+        val original = VectorChunk("chunk", ChunkSourceType.CHAT_MEMORY, "source", content = "Original summary",
+            embedding = listOf(1f), metadata = mapOf("messageIds" to " a, , b, ", "note" to " a, , b, "), createdAt = 1)
+        val copied = policy.chunk(original)
+        assertEquals("${policy.messageId("a")},${policy.messageId("b")}", copied.metadata["messageIds"])
+        assertEquals(original.metadata["note"], copied.metadata["note"])
+        assertEquals(original.content, copied.content)
+        assertEquals(original.embedding, copied.embedding)
+    }
+
     private val source = ChatSession(
         id = "source", characterCardId = "card", title = "角色", createdAt = 1, updatedAt = 2
     )

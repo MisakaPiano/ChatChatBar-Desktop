@@ -62,6 +62,43 @@ jobs:
             git diff --exit-code -- $file
             if ($LASTEXITCODE -ne 0) { throw 'INLINE_CURRENT_SOURCE_NOT_RESTORED' }
           }
+      - name: Reproduce old reader whitespace mismatch in merge and session copy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '737f0d6ed10b65a89095747f3b95bd92b95636c3'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_WHITESPACE_SOURCE_UNAVAILABLE' }
+          $files = @('app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeIdentity.kt', 'app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SessionCopyPolicy.kt')
+          $cases = @(
+            @{ task=':desktopApp:test'; method='com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest.legacy CSV whitespace maps reader identities in top level and inline RAG'; report='app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest.xml'; tag='whitespace-merge' },
+            @{ task=':sharedCore:test'; method='com.example.chatbar.domain.chat.SessionCopyPolicyTest.legacy CSV whitespace follows reader message identity when copying'; report='app/sharedCore/build/test-results/test/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml'; tag='whitespace-copy' }
+          )
+          try {
+            git restore --source=$prior --worktree -- $files
+            foreach ($case in $cases) {
+              Push-Location app
+              try {
+                .\gradlew.bat $case.task --tests $case.method -PdesktopTestHeadless=true --no-daemon --stacktrace
+                $negativeExit = $LASTEXITCODE
+              } finally { Pop-Location }
+              [xml]$report = Get-Content -Raw -LiteralPath $case.report
+              if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_WHITESPACE_ASSERTION_NOT_REACHED' }
+              if ($report.testsuite.testcase.failure.type -ne 'org.junit.ComparisonFailure') { throw 'PRIOR_WHITESPACE_WRONG_FAILURE' }
+              Copy-Item -LiteralPath $case.report -Destination "inline-review/negative-$($case.tag).xml"
+              $prior | Set-Content "inline-review/negative-$($case.tag)-source.txt"
+            }
+          } finally {
+            git restore --source=HEAD --worktree -- $files
+            git diff --exit-code -- $files
+            if ($LASTEXITCODE -ne 0) { throw 'WHITESPACE_CURRENT_SOURCE_NOT_RESTORED' }
+          }
+      - name: Verify shared copy reader identity and preserved metadata
+        working-directory: app
+        run: >-
+          .\gradlew.bat :sharedCore:test
+          --tests 'com.example.chatbar.domain.chat.SessionCopyPolicyTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
       - name: Verify typed nested references actual fresh merge restore cleanup and custody
         working-directory: app
         run: >-

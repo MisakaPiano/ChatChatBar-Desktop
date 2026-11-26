@@ -28,7 +28,8 @@ class SessionCopyPolicy(targetSessionId: String, messageIds: Set<String>) {
         messageId = chunk.messageId?.let(::messageId),
         metadata = chunk.metadata.mapValues { (key, value) ->
             if (key == "messageIds" || key == ChatMemoryIndexPolicy.ACTION_CHOICE_SOURCE_IDS) {
-                value.split(',').filter(String::isNotBlank).joinToString(",", transform = ::messageId)
+                val references = value.split(',').let { if (key == "messageIds") it.map(String::trim) else it }
+                references.filter(String::isNotBlank).joinToString(",", transform = ::messageId)
             } else value
         }
     )
