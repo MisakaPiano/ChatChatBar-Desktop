@@ -42,9 +42,15 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $prior = '485b721b0d85448cbe8eec986691ccef8012e3ca'
           $file = 'app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt'
+          $draftTest = 'app/sharedCore/src/test/kotlin/com/example/chatbar/data/repository/ChatDraftImagesTest.kt'
+          # Only this unrelated new-API fixture is absent from the frozen old-repository compile.
+          # The negative owner fixture, current storage and index DTO remain identical.
+          $hasDraftTest = Test-Path -LiteralPath $draftTest
+
           git fetch origin $prior --depth=1
           if ($LASTEXITCODE -ne 0) { throw 'PRIOR_SOURCE_UNAVAILABLE' }
           try {
+            if ($hasDraftTest) { Move-Item -LiteralPath $draftTest -Destination 'owner-review/negative-excluded-draft-api-fixture.txt' }
             git restore --source=$prior --worktree -- $file
             Push-Location app
             try {
@@ -59,7 +65,8 @@ jobs:
             $prior | Set-Content 'owner-review/negative-source.txt'
           } finally {
             git restore --source=HEAD --worktree -- $file
-            git diff --exit-code -- $file
+            if ($hasDraftTest) { git restore --source=HEAD --worktree -- $draftTest }
+            git diff --exit-code -- $file $draftTest
             if ($LASTEXITCODE -ne 0) { throw 'CURRENT_SOURCE_NOT_RESTORED' }
           }
       - name: Verify owner scope storage and conditional repository boundaries
