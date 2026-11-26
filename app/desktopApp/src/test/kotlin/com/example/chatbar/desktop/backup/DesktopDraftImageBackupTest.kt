@@ -14,7 +14,11 @@ class DesktopDraftImageBackupTest {
             fun write(path: String, value: JsonObject) { val p = root.resolve(path); Files.createDirectories(p.parent); Files.writeString(p, value.toString()) }
             write("entities/character_cards/c.json", backupJson.encodeToJsonElement(CharacterCard.serializer(), CharacterCard("c", "Synthetic", createdAt = 1, updatedAt = 1)).jsonObject)
             write("entities/chat_sessions/s.json", backupJson.encodeToJsonElement(ChatSession.serializer(), ChatSession("s", "c", "Synthetic", createdAt = 1, updatedAt = 1)).jsonObject)
-            val image = root.resolve("images/draft.png"); Files.createDirectories(image.parent); val bytes = byteArrayOf(1, 2, 3, 4); Files.write(image, bytes)
+            val image = root.resolve("images/draft.png"); Files.createDirectories(image.parent)
+            val raster = java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+            val bytes = try { java.io.ByteArrayOutputStream().use { javax.imageio.ImageIO.write(raster, "png", it); it.toByteArray() } }
+                finally { raster.flush() }
+            Files.write(image, bytes)
             val draft = ChatDraft("s", "unsent text", 7, listOf(image.toString()))
             write("entities/chat_drafts/s.json", backupJson.encodeToJsonElement(ChatDraft.serializer(), draft).jsonObject)
             val original = Files.readAllBytes(root.resolve("entities/chat_drafts/s.json"))
@@ -30,6 +34,27 @@ class DesktopDraftImageBackupTest {
                     if (include) {
                         val resource = result.images.single().removePrefix(DesktopBackupPolicy.PREFIX)
                         assertContentEquals(bytes, Files.readAllBytes(exported.files.getValue(resource)))
+                    }
+                    val target = Files.createDirectory(base.resolve("restored-$include"))
+                    DesktopFullBackupMapping(target).restoreMerged(exported.files,
+                        Files.createDirectory(base.resolve("restore-work-$include")), BackupPreferences()).use { restored ->
+                        for ((relative, file) in restored.files) {
+                            val destination = target.resolve(relative); Files.createDirectories(destination.parent); Files.copy(file, destination)
+                        }
+                    }
+                    val cold = com.example.chatbar.data.repository.ChatRepository(com.example.chatbar.data.local.JsonFileStorage(target))
+                    val loaded = assertNotNull(cold.getSessionDraftSnapshot("s"))
+                    assertEquals("unsent text", loaded.content)
+                    assertEquals(if (include) 1 else 0, loaded.images.size)
+                    val recovered = com.example.chatbar.desktop.DesktopChatImages(
+                        com.example.chatbar.desktop.DesktopCharacterResourceStore(target), cold).restoreDraftImages(loaded.images)
+                    if (include) assertContentEquals(bytes, recovered.single().bytes) else assertTrue(recovered.isEmpty())
+                    DesktopFullBackupMapping(target).export(Files.createDirectory(base.resolve("reexport-$include")), 88,
+                        StrictBackupZipReader.Limits().expanded, selection = selection).use { again ->
+                        val portable = backupJson.decodeFromString(ChatDraft.serializer(), Files.readString(again.files.getValue("entities/chat_drafts/s.json")))
+                        assertEquals("unsent text", portable.content)
+                        assertEquals(if (include) 1 else 0, portable.images.size)
+                        if (include) assertContentEquals(bytes, Files.readAllBytes(again.files.getValue(portable.images.single().removePrefix(DesktopBackupPolicy.PREFIX))))
                     }
                 }
             }
