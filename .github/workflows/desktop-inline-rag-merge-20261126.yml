@@ -1,0 +1,84 @@
+name: Desktop inline RAG CSV merge references
+on:
+  push:
+    branches: [codex/desktop-inline-rag-merge-20261126]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-inline-rag-merge-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind canonical synthetic directory and exact source
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-inline-rag-merge'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class InlineMergeFixturePath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([InlineMergeFixturePath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'FIXTURE_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'inline-review' | Out-Null
+          git rev-parse HEAD | Set-Content 'inline-review/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'inline-review/tree.txt'
+      - name: Reproduce old nested CSV mapping with frozen identity owner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prior = '167d6c40fa4af1f0e20e888bba782f908bf553ef'
+          $file = 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeIdentity.kt'
+          git fetch origin $prior --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'PRIOR_INLINE_SOURCE_UNAVAILABLE' }
+          try {
+            git restore --source=$prior --worktree -- $file
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest.inline RAG CSV references map each original message without rewriting note text' -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $negativeExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($negativeExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'PRIOR_INLINE_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.failure.type -notin @('java.lang.AssertionError', 'org.junit.ComparisonFailure')) { throw 'PRIOR_INLINE_WRONG_FAILURE' }
+            Copy-Item -LiteralPath $path -Destination 'inline-review/negative-csv.xml'
+            $prior | Set-Content 'inline-review/negative-source.txt'
+          } finally {
+            git restore --source=HEAD --worktree -- $file
+            git diff --exit-code -- $file
+            if ($LASTEXITCODE -ne 0) { throw 'INLINE_CURRENT_SOURCE_NOT_RESTORED' }
+          }
+      - name: Verify typed nested references actual fresh merge restore cleanup and custody
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopInlineRagMergeRoundTripTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest'
+          --tests 'com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest'
+          --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest'
+          --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-inline-rag-merge-original-results
+          path: |
+            inline-review/
+            app/sharedCore/build/test-results/test/
+            app/desktopApp/build/test-results/test/

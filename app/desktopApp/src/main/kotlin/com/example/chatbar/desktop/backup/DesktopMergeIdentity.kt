@@ -43,8 +43,9 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
         if (record.type == "save_slots" && fields.size == 1 && fields.single() in setOf("inlineSourceSessionId", "desktopMemorySourceSessionId")) return "chat_sessions"
         if (record.type == "vector_chunks" && record.text("sourceType") == "DOCUMENT" &&
             fields.size == 2 && fields.first() == "metadata" && field in setOf("documentId", "originalDocId")) return "documents"
-        if (record.type == "vector_chunks" && record.text("sourceType") == "CHAT_MEMORY" &&
-            fields == listOf("metadata", "actionChoiceSourceIds")) return "chat_messages"
+        if ((record.type == "vector_chunks" && record.text("sourceType") == "CHAT_MEMORY" &&
+                fields == listOf("metadata", "actionChoiceSourceIds")) ||
+            (record.type == "save_slots" && fields.takeLast(3) == listOf("vectorChunks", "metadata", "actionChoiceSourceIds"))) return "chat_messages"
         if ("desktopPlayerRole" in fields) {
             if (field == "cardId") return "character_cards"
             if (field == "personId") return "characters"
@@ -127,7 +128,10 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
     }
     fun string(record: DesktopMergeRecord, text: String, fields: List<String>): String {
         val type = fieldSpace(record, fields) ?: return text
-        if (fields == listOf("metadata", "messageIds") || fields == listOf("metadata", "actionChoiceSourceIds")) return text.split(',').joinToString(",") { value(type, it) }
+        val metadata = fields.takeLast(2)
+        val csvMessageReferences = metadata in setOf(listOf("metadata", "messageIds"), listOf("metadata", "actionChoiceSourceIds")) &&
+            (fields.size == 2 || record.type == "save_slots" && fields.dropLast(2).lastOrNull() == "vectorChunks")
+        if (csvMessageReferences) return text.split(',').joinToString(",") { value(type, it) }
         return value(type, text)
     }
     fun key(text: String, fields: List<String>): String = when (fields.lastOrNull()) {

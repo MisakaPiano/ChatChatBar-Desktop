@@ -8,6 +8,24 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeGraphRemapperTest {
+    @Test fun `inline RAG CSV references map each original message without rewriting note text`() {
+        val first = ChatMessage("m1", "s", MessageRole.USER, "Original user", createdAt = 1, updatedAt = 1)
+        val second = ChatMessage("m2", "s", MessageRole.ASSISTANT, "Original reply", createdAt = 2, updatedAt = 2)
+        val chunk = VectorChunk("chunk", ChunkSourceType.CHAT_MEMORY, "s", messageId = "m1", content = "Unchanged RAG body",
+            embedding = listOf(1f, 0f), metadata = mapOf("messageIds" to "m1,m2", "actionChoiceSourceIds" to "m1,m2", "note" to "m1,m2"), createdAt = 1)
+        val slot = SaveSlot(schemaVersion = 7, id = "slot", sessionId = "s", name = "Legacy", createdAt = 1,
+            messages = listOf(first, second), vectorChunks = listOf(chunk))
+        val source = record("save_slots", backupJson.encodeToJsonElement(SaveSlot.serializer(), slot).jsonObject)
+        val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "s", "fork-s"); bind("chat_messages", "m1", "fork-one"); bind("chat_messages", "m2", "fork-two") }
+        val mapped = backupJson.decodeFromJsonElement(SaveSlot.serializer(), DesktopMergeGraphRemapper(listOf(source), ids).rewrite(source))
+        val rag = mapped.vectorChunks.single()
+        assertEquals("fork-one,fork-two", rag.metadata["messageIds"])
+        assertEquals("fork-one,fork-two", rag.metadata["actionChoiceSourceIds"])
+        assertEquals("fork-one", rag.messageId); assertEquals("m1,m2", rag.metadata["note"])
+        assertEquals(chunk.content, rag.content)
+        assertEquals(listOf("Original user", "Original reply"), mapped.messages.map { it.content })
+    }
+
     @Test fun `participation remaps both card key and nested person IDs without rewriting unrelated text`() {
         val source = record("chat_sessions", obj("""{"id":"s","characterCardId":"id","desktopAutoPauseAbsentPeople":true,"desktopCharacterParticipation":[{"cardId":"id","disabledPersonIds":["p"],"automaticallyPausedPersonIds":["p"]}],"title":"id p"}"""))
         val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "s", "fork-s"); bind("character_cards", "id", "fork-c"); bind("characters", "p", "fork-p") }
