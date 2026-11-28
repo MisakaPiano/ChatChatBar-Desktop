@@ -61,6 +61,8 @@ jobs:
             if ($report.testsuite.testcase.name -ne $case.method -or $report.testsuite.testcase.failure.type -ne 'java.lang.AssertionError' -or $report.testsuite.testcase.failure.message -notlike "*$($case.marker)*") { throw 'TARGET_FAILURE_MISMATCH' }
             Copy-Item -LiteralPath $path -Destination "voice-review/target-$($case.tag).xml"
           }
+          # The last native Gradle failure was required and already validated above.
+          exit 0
       - name: Preserve same-value delete and regeneration contracts
         working-directory: app
         run: >-
