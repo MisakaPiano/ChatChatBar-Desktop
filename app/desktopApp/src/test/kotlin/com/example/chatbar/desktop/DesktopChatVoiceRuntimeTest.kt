@@ -15,6 +15,49 @@ import okio.Buffer
 import kotlin.test.*
 
 class DesktopChatVoiceRuntimeTest {
+    @Test fun `canonical public voice B survives stale facade delete`() = runBlocking {
+        canonicalVoiceCounter(delete = true, changed = true)
+    }
+    @Test fun `canonical public voice B survives stale facade regeneration`() = runBlocking {
+        canonicalVoiceCounter(delete = false, changed = true)
+    }
+    @Test fun `same value public voice still allows facade delete`() = runBlocking {
+        canonicalVoiceCounter(delete = true, changed = false)
+    }
+    @Test fun `same value public voice still allows facade regeneration`() = runBlocking {
+        canonicalVoiceCounter(delete = false, changed = false)
+    }
+
+    private suspend fun canonicalVoiceCounter(delete: Boolean, changed: Boolean) {
+        Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val captured = f.repo.listForSession(f.session.id).single()
+            val peer = if (changed) captured.copy(characterName = "Independent B") else captured
+            // A real public same-root write, after the UI captured A; no repository callback.
+            f.storage.saveEntity("generated_voice_messages", peer.id, peer, GeneratedVoiceMessage.serializer())
+            if (delete) f.runtime.deleteVoice(captured)
+            else {
+                f.enqueue()
+                f.runtime.generate(f.message, "alice", replace = captured, editedTaggedText = "replacement")?.let { f.done(it) }
+            }
+            val durable = (f.repo.readDurable(captured.id) as? JsonFileStorage.EntityReadResult.Valid)?.value
+            val fresh = VoiceMessageRepository(JsonFileStorage(f.root), strictReads = true).get(captured.id)
+            val audioKept = Files.isRegularFile(Path.of(peer.audioPath))
+            println("VOICE_COUNTER delete=$delete changed=$changed durablePeer=${durable == peer} freshPeer=${fresh == peer} audioKept=$audioKept requests=${f.server.requestCount}")
+            if (changed) {
+                val marker = if (delete) "VOICE_CANONICAL_B_STALE_DELETE" else "VOICE_CANONICAL_B_STALE_REGENERATION"
+                assertTrue(durable == peer && fresh == peer && audioKept && f.server.requestCount == 1, marker)
+            } else if (delete) {
+                assertNull(durable); assertNull(fresh); assertEquals(1, f.server.requestCount)
+            } else {
+                assertNotNull(durable); assertEquals(durable, fresh)
+                assertNotEquals(captured.audioPath, durable.audioPath)
+                assertEquals(2, f.server.requestCount)
+                assertTrue(Files.isRegularFile(Path.of(durable.audioPath)))
+            }
+        }
+    }
+
     @Test fun `automatic presence pause preserves admitted voice snapshot and only blocks future generation`() = runBlocking {
         Fixture().use { f ->
             f.seed()

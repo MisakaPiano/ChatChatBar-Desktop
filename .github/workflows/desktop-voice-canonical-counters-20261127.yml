@@ -1,0 +1,77 @@
+name: Desktop voice canonical old-source counters
+on:
+  push:
+    branches: [codex/desktop-voice-canonical-counters-20261127]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-voice-canonical-counters-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  counters:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Bind exact source and canonical synthetic temporary path
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'ccb-voice-canonical-counter'
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Add-Type 'using System.Text; using System.Runtime.InteropServices; public static class VoiceCounterPath { [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern uint GetLongPathName(string path, StringBuilder result, uint size); }'
+          $buffer = New-Object System.Text.StringBuilder 32768
+          if ([VoiceCounterPath]::GetLongPathName($folder, $buffer, 32768) -eq 0) { throw 'SYNTHETIC_NATIVE_PATH_UNCONFIRMED' }
+          "TEMP=$buffer" >> $env:GITHUB_ENV
+          "TMP=$buffer" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Path 'voice-review' | Out-Null
+          git rev-parse HEAD | Set-Content 'voice-review/source.txt'
+          git rev-parse 'HEAD^{tree}' | Set-Content 'voice-review/tree.txt'
+          git fetch origin 0eda755bd18f3e7d86412ee4335dcd99fe5f920a --depth=1
+          if ($LASTEXITCODE -ne 0) { throw 'FROZEN_BASE_UNAVAILABLE' }
+          $paths = @(git diff --name-only 0eda755bd18f3e7d86412ee4335dcd99fe5f920a HEAD)
+          if ($LASTEXITCODE -ne 0 -or $paths.Count -ne 2 -or @($paths | Where-Object { $_ -notin @('.github/workflows/desktop-voice-canonical-counters-20261127.yml', 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt') }).Count -ne 0) { throw 'PRODUCT_BYTES_CHANGED' }
+          $paths | Set-Content 'voice-review/changed-paths.txt'
+      - name: Observe two exact old-product target assertions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            @{ method='canonical public voice B survives stale facade delete'; marker='VOICE_CANONICAL_B_STALE_DELETE'; tag='delete' },
+            @{ method='canonical public voice B survives stale facade regeneration'; marker='VOICE_CANONICAL_B_STALE_REGENERATION'; tag='regeneration' }
+          )
+          foreach ($case in $cases) {
+            Push-Location app
+            try {
+              .\gradlew.bat :desktopApp:test --tests "com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.$($case.method)" -PdesktopTestHeadless=true --no-daemon --stacktrace
+              $testExit = $LASTEXITCODE
+            } finally { Pop-Location }
+            $path = 'app/desktopApp/build/test-results/test/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml'
+            [xml]$report = Get-Content -Raw -LiteralPath $path
+            if ($testExit -ne 1 -or $report.testsuite.tests -ne '1' -or $report.testsuite.failures -ne '1' -or $report.testsuite.errors -ne '0' -or $report.testsuite.skipped -ne '0') { throw 'TARGET_ASSERTION_NOT_REACHED' }
+            if ($report.testsuite.testcase.name -ne $case.method -or $report.testsuite.testcase.failure.type -ne 'java.lang.AssertionError' -or $report.testsuite.testcase.failure.message -notlike "*$($case.marker)*") { throw 'TARGET_FAILURE_MISMATCH' }
+            Copy-Item -LiteralPath $path -Destination "voice-review/target-$($case.tag).xml"
+          }
+      - name: Preserve same-value delete and regeneration contracts
+        working-directory: app
+        run: >-
+          .\gradlew.bat :desktopApp:test
+          --tests 'com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.same value public voice still allows facade delete'
+          --tests 'com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.same value public voice still allows facade regeneration'
+          -PdesktopTestHeadless=true --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-voice-canonical-old-counters
+          path: |
+            voice-review/
+            app/desktopApp/build/test-results/test/
